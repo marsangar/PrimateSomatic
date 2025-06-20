@@ -1,33 +1,34 @@
 # Comparative analyses of somatic mutational processes in primates across lifespans
-This repository hosts data, scripts, and documentation related to the PSM project
+This repository hosts data, scripts, and documentation related to the PSM projec
 
 ## Project Overview
 This project aims to investigate somatic mutation landscapes across multiple tissues and primate species with different lifespans
 
 ![dataBPMR_combined](06_plots/prelim/dataBPMR_combined.png)
 
+
 ## Objectives
-- To create a pan-primate somatic mutational atlas
-- To characterize somatic clonal evolution across primates
-- To identify genetic determinants of primate somatic evolution
+- To create a pan-primate somatic mutational atlas (Objective I)
+- To characterize somatic clonal evolution across primates (Objective II)
+- To identify genetic determinants of primate somatic evolution 
 
 
 ## Primate Species
 
 ### Foundational dataset
-- Common marmosets (_Callitrhix jacchus_) // calJac4
-- Reshus macaques (_Macaca mulatta_) // rheMac10
-- Olive baboons (_Papio anubis_) // papAnu4
-- Humans (_Homo sapiens_) // hg38
+- Common marmosets (_Callitrhix jacchus_) // calJac4 assembly
+- Reshus macaques (_Macaca mulatta_) // rheMac10 assembly
+- Olive baboons (_Papio anubis_) // papAnu4 assembly
+- Humans (_Homo sapiens_) // hg38 assembly
 
 ### Additional dataset
-- Chimpanzee (_Pan troglodytes_) //
-- Western lowland gorilla (_Gorilla gorilla gorilla_) //
-- White-naped mangabey (_Cercocebus lunulatus_) //
-- Squirrel monkeys (_Saimiri boliviensis boliviensis_) //
-- Pied tamarins (_Saguinus bicolor_) //
-- Slender loris (_Loris lydekkeranius_) //
-- Ring-tailed lemur (_Lemur catta_) // 
+- Chimpanzee (_Pan troglodytes_) // panTro6 assembly
+- Western lowland gorilla (_Gorilla gorilla gorilla_) // gorGor6 assembly
+- White-naped mangabey (_Cercocebus lunulatus_) // PGDP_CerLun assembly
+- Squirrel monkeys (_Saimiri boliviensis boliviensis_) // saiBol1 assembly
+- Pied tamarins (_Saguinus bicolor_) // PGDP_SagBic assembly
+- Slender loris (_Loris lydekkeranius_) // PGDP_LorLyd assembly
+- Ring-tailed lemur (_Lemur catta_) // mLemCat1.pri assembly
 
 ## Target tissue types
 - Cardiac muscle (cardiomyocytes)
@@ -56,19 +57,29 @@ cd PrimateSomatic
 
 ## Contact
 Martín Santamarina García
-Research Associate - Comparative Somatic Evolutionary Genomics / Department of Genetics / University of Cambridge
+
+Research Associate // Comparative Somatic Evolutionary Genomics / Department of Genetics / University of Cambridge
 Contingent Worker - Cancer predisposition and ageing / CASM / Wellcome Sanger Institute
+
 ms3242@cam.ac.uk / ms84@sanger.ac.uk
 
 ## Acknowledgements
-We thank the collaborators, funding agencies (NIH), and facilities that support this project:
- 
-- **Medical Research Council Centre for Macaques (CFM), UK** 
-- **Biomedical Primate Research Centre (BPRC), Netherlands** 
-- **Southwest National Primate Research Center (SNPRC), USA**
-- **Zoological Society of London (ZSL), UK**
-- **Coriell Institute for Medical Research, USA**
+We thank the collaborators, funding agencies, and facilities that support this project:
 
-- **Wellcome Sanger Institute**
-- **University of Berkeley**
-- **University of Cambridge**
+NIH Funding Reference: 1R01AG087974 / 00011897
+CUFS project code: PCAG/521 
+ 
+- *Wellcome Sanger Institute*
+- *University of Berkeley*
+- *University of Cambridge*
+
+ Collaborator centres:
+- *Medical Research Council Centre for Macaques (CFM), UK*
+- *Biomedical Primate Research Centre (BPRC), Netherlands*
+- *Southwest National Primate Research Center (SNPRC), USA*
+- *Zoological Society of London (ZSL), UK*
+- *Coriell Institute for Medical Research (CIMR), USA*
+
+
+
+
