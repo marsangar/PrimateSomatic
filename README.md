@@ -1,27 +1,33 @@
 # Comparative analyses of somatic mutational processes in primates across lifespans
-This repository hosts data, scripts, and documentation related to the PSM projec
+This repository hosts data, scripts, and documentation related to the primate somatic mutation (PMS) project
 
 ## Project Overview
-This project aims to investigate somatic mutation landscapes across multiple tissues and primate species with different lifespans
+The vast diversity in lifespans among organisms provides a remarkable natural experiment in which to explore the
+evolutionary innovations that have shaped the extensive variation of this phenotype. Non-human primates in
+particular represent a critical taxon for understanding the evolution of human lifespan due to their close phylogenetic
+proximity and broad range of lifespans. Here, we propose to characterize the somatic mutational landscape of aging
+across multiple tissues in diverse primate species spanning million years of evolution.
+
 
 ![dataBPMR_combined](06_plots/prelim/dataBPMR_combined.png)
 
 
 ## Objectives
-- To create a pan-primate somatic mutational atlas (Objective I)
-- To characterize somatic clonal evolution across primates (Objective II)
-- To identify genetic determinants of primate somatic evolution 
+
+- To create a pan-primate somatic mutational atlas
+- To characterize somatic clonal evolution across primates
+- To identify genetic determinants of primate somatic evolution
 
 
 ## Primate Species
 
-### Foundational dataset
+### Foundational species
 - Common marmosets (_Callitrhix jacchus_) // calJac4 assembly
 - Reshus macaques (_Macaca mulatta_) // rheMac10 assembly
 - Olive baboons (_Papio anubis_) // papAnu4 assembly
 - Humans (_Homo sapiens_) // hg38 assembly
 
-### Additional dataset
+### Additional species
 - Chimpanzee (_Pan troglodytes_) // panTro6 assembly
 - Western lowland gorilla (_Gorilla gorilla gorilla_) // gorGor6 assembly
 - White-naped mangabey (_Cercocebus lunulatus_) // PGDP_CerLun assembly
@@ -58,8 +64,8 @@ cd PrimateSomatic
 ## Contact
 Martín Santamarina García
 
-Research Associate // Comparative Somatic Evolutionary Genomics / Department of Genetics / University of Cambridge
-Contingent Worker - Cancer predisposition and ageing / CASM / Wellcome Sanger Institute
+- Research Associate - Comparative Somatic Evolutionary Genomics / Department of Genetics / University of Cambridge
+- Contingent Worker - Cancer predisposition and ageing / CASM / Wellcome Sanger Institute
 
 ms3242@cam.ac.uk / ms84@sanger.ac.uk
 
@@ -73,7 +79,6 @@ CUFS project code: PCAG/521
 - *University of Berkeley*
 - *University of Cambridge*
 
- Collaborator centres:
 - *Medical Research Council Centre for Macaques (CFM), UK*
 - *Biomedical Primate Research Centre (BPRC), Netherlands*
 - *Southwest National Primate Research Center (SNPRC), USA*
