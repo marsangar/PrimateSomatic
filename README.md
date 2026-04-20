@@ -1,12 +1,12 @@
 # Comparative analyses of somatic mutational processes in primates across lifespans
-This repository hosts data, scripts, and documentation related to the primate somatic mutation (PMS) project
+This repository hosts data, scripts, and documentation related to the Primate Somatic project
 
 ## Project Overview
 The vast diversity in lifespans among organisms provides a remarkable natural experiment in which to explore the
 evolutionary innovations that have shaped the extensive variation of this phenotype. Non-human primates in
 particular represent a critical taxon for understanding the evolution of human lifespan due to their close phylogenetic
-proximity and broad range of lifespans. Here, we propose to characterize the somatic mutational landscape of aging
-across multiple tissues in diverse primate species spanning million years of evolution.
+proximity and broad range of lifespans. Here, we propose to characterize the somatic mutational landscape of ageing across multiple tissues in non-human primates, investigating molecular patterns shaped by millions of years of evolution. These maps will be generated from diverse tissues from rhesus macaques (Macaca mulatta, mean lifespan: 26 years) and chimpanzees (Pan troglodytes, mean lifespan: 36 years) in animals of varied ages across their respective lifespans.
+
 
 
 ![dataBPMR_combined](06_plots/prelim/dataBPMR_combined.png)
@@ -14,21 +14,25 @@ across multiple tissues in diverse primate species spanning million years of evo
 
 ## Objectives
 
-- To create a pan-primate somatic mutational atlas
-- To characterize somatic clonal evolution across primates
-- To identify genetic determinants of primate somatic evolution
+- To create a somatic mutational atlas across non-human primates
+- To characterize somatic clonal evolution patterns across primate tissues
+- To identify novel genetic determinants of primate aging
+
+## Methods
+- Untargeted NanoSeq
+- Targeted NanoSeq
 
 
 ## Primate Species
 
 ### Foundational species
-- Common marmosets (_Callitrhix jacchus_) // calJac4 assembly
-- Reshus macaques (_Macaca mulatta_) // rheMac10 assembly
-- Olive baboons (_Papio anubis_) // papAnu4 assembly
-- Humans (_Homo sapiens_) // hg38 assembly
+- Chimpanzee (_Pan troglodytes_) // NHGRI_mPanTro3-v2.1_pri assembly
+- Reshus macaques (_Macaca mulatta_) // Mmul_10 assembly
 
 ### Additional species
-- Chimpanzee (_Pan troglodytes_) // panTro6 assembly
+- Humans (_Homo sapiens_) // hg38 assembly
+- Common marmosets (_Callitrhix jacchus_) // calJac4 assembly
+- Olive baboons (_Papio anubis_) // papAnu4 assembly
 - Western lowland gorilla (_Gorilla gorilla gorilla_) // gorGor6 assembly
 - White-naped mangabey (_Cercocebus lunulatus_) // PGDP_CerLun assembly
 - Squirrel monkeys (_Saimiri boliviensis boliviensis_) // saiBol1 assembly
@@ -65,7 +69,7 @@ cd PrimateSomatic
 Martín Santamarina García
 
 - Research Associate - Comparative Somatic Evolutionary Genomics / Department of Genetics / University of Cambridge
-- Contingent Worker - Cancer predisposition and ageing / CASM / Wellcome Sanger Institute
+- Contingent Worker - Somatic Genomics Programme / SGP / Wellcome Sanger Institute
 
 ms3242@cam.ac.uk / ms84@sanger.ac.uk
 
