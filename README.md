@@ -9,7 +9,7 @@ proximity and broad range of lifespans. Here, we propose to characterize the som
 
 
 
-![dataBPMR_combined](06_plots/prelim/dataBPMR_combined.png)
+![PrimateSomatic](PrimateSomatic.png)
 
 
 ## Objectives
