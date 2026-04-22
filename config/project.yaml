@@ -1,0 +1,10 @@
+---
+project:
+ name: "PrimateSomatic"
+ version: "v0.1"
+ author: "Martín Santamarina García"
+ 
+analysis:
+  species: [Macaca_mulatta, Pan_troglodytes]
+  tecnology: [nanoseq, targeted_nanoseq]
+  tissues: [Bladder, Liver, Oesophagus, Prostate, Skin]

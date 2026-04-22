@@ -1,0 +1,14 @@
+---
+default: local   # change to "hpc" when running on cluster
+
+local:
+ base_dir: "/Users/ms84/Research/postdoc/projects/PrimateSomatic"
+ data_dir: "/Users/ms84/data/primate"
+ results_dir: "NA"
+ home_dir: "/Users/ms84"
+
+hpc:
+ base_dir: "/lustre/scratch126/casm/teams/team294/projects/cseg/PrimateSomatic"
+ data_dir: "/lustre/scratch126/casm/teams/team294/projects/cseg/PrimateSomatic/Macaca_mulatta/targeted_nanoseq"
+ results_dir: "NA"
+ home_dir: "/nfs/users/nfs_m/ms84"

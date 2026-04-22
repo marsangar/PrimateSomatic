@@ -1,7 +1,7 @@
 # ============================================
 # PrimateSomatic Master Script
 # Author: Martín Santamarina García
-# Contact: ms32@cam.ac.uk / ms84@sanger.ac.uk
+# Contact: ms3242@cam.ac.uk
 # Date: 2026-04-21
 # Project: Comparative analyses of somatic mutational processes in primates across lifespans
 #
@@ -46,12 +46,13 @@ library(openxlsx)
 library(yaml)
 
 #### Load project configuration
-source("config/paths.R")
-source("config/palette.R")
+paths_config <- yaml::read_yaml("config/paths.yaml")
 
-project_config <- yaml::read_yaml("config/project_config.yaml")
+project_config <- yaml::read_yaml("config/project.yaml")
 species_config <- yaml::read_yaml("config/species.yaml")
 tech_config    <- yaml::read_yaml("config/technology.yaml")
+
+source("config/palette.R")
 
 #### Load internal functions
 source("src/utils.R")
@@ -60,6 +61,7 @@ source("src/utils.R")
 
 #### Define global parameters
 SPECIES    <- "Macaca_mulatta"        # or "Pan_troglodytes"
+REFERENCE <- "Mmul_10"
 TECH       <- "nanoseq"        # or "targeted_nanoseq"
 VERSION    <- "v0.1"       # v0.1 / v0.2 / v0.3
 RUN_MODE   <- "full"           # full / test / debug

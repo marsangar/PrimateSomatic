@@ -1,0 +1,8 @@
+---
+nanoseq:
+ parameters:
+  asxs: 50
+
+targeted_nanoseq:
+ parameters:
+  asxs: 10

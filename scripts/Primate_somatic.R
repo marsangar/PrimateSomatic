@@ -1,6 +1,2 @@
 ### Load configs
-source("/Users/ms84/Research/postdoc/projects/PrimateSomatic/config/palette.R")
-
-### Load utils
-
-### Load metadata
+source("/Users/ms84/Research/postdoc/projects/PrimateSomatic/Primate_master.r")

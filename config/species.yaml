@@ -1,0 +1,18 @@
+---
+macaque:
+ scientific_name: "Macaca_mulatta"
+ genome_build: "Mmul_10"
+ reference: "/lustre/scratch126/casm/teams/team294/projects/cseg/resources/reference_genomes/Macaca_mulatta/Mmul_10/reference_files/genome.fa"
+ annotation: "/lustre/scratch126/casm/teams/team294/projects/cseg/resources/reference_genomes/Macaca_mulatta/Mmul_10/annotation/genomic.gff"
+ chromosomes:
+  autosomes: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+  sex: [X,Y]
+
+chimpanzee:
+ scientific_name: "Pan_troglodytes"
+ genome_build: "NHGRI_mPanTro3-v2.1_pri"
+ reference: "/lustre/scratch126/casm/teams/team294/projects/cseg/resources/reference_genomes/Pan_troglodytes/NHGRI_mPanTro3-v2.1_pri/reference_files/genome.fa"
+ annotation: "/lustre/scratch126/casm/teams/team294/projects/cseg/resources/reference_genomes/Pan_troglodytes/NHGRI_mPanTro3-v2.1_pri/annotation/genomic.gff"
+ chromosomes:
+  autosomes: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22]
+  sex: [X,Y]
