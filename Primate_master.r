@@ -6,7 +6,7 @@
 # Project: Comparative analyses of somatic mutational processes in primates across lifespans
 #
 # Description:
-# Main orchestration script for duplex sequencing analysis:
+# Main orchestrator script for the analysis of duplex sequencing genomic data:
 # - Germline / somatic filtering
 # - dN/dS estimation
 # - Driver screening
@@ -47,17 +47,22 @@ library(yaml)
 
 #### Load project configuration
 paths_config <- yaml::read_yaml("config/paths.yaml")
-
 project_config <- yaml::read_yaml("config/project.yaml")
 species_config <- yaml::read_yaml("config/species.yaml")
 tech_config    <- yaml::read_yaml("config/technology.yaml")
 
+source("config/paths.r")
 source("config/palette.R")
 
+#### Load metadata
+dataMETA_macaca<-read.xlsx("metadata/metadata_Macaca_mulatta.xlsx")
+dataMETA_pan<-read.xlsx("metadata/metadata_Pan_troglodytes.xlsx")
+
 #### Load internal functions
-source("src/utils.R")
+source("src/utils.r")
 
 #### Load external toolkit
+#source("/software/team294/ms84/genomic_toolkit/")
 
 #### Define global parameters
 SPECIES    <- "Macaca_mulatta"        # or "Pan_troglodytes"
@@ -65,3 +70,6 @@ REFERENCE <- "Mmul_10"
 TECH       <- "nanoseq"        # or "targeted_nanoseq"
 VERSION    <- "v0.1"       # v0.1 / v0.2 / v0.3
 RUN_MODE   <- "full"           # full / test / debug
+
+
+

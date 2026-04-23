@@ -15,7 +15,7 @@ test_palette <- c(
 )
 
 ### Tissue palette
-tissue_colors <- c(
+tissue_colours <- c(
   "Bladder" = "#F8766D",
   "Liver" = "#A3A500",
   "Oesophagus" = "#00BF7D",
@@ -25,7 +25,7 @@ tissue_colors <- c(
 
 
 ## Impact palette
-impact_colors <- c(
+impact_colours <- c(
   "None"              = "white",
   "Missense"          = "#FDB462",
   "Essential_Splice"  = "#377EB8",

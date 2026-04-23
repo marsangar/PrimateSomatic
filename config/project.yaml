@@ -3,8 +3,22 @@ project:
  name: "PrimateSomatic"
  version: "v0.1"
  author: "Martín Santamarina García"
- 
+
+run:
+ mode: full # full / test /debug
+ seed: 123
+
 analysis:
   species: [Macaca_mulatta, Pan_troglodytes]
   tecnology: [nanoseq, targeted_nanoseq]
   tissues: [Bladder, Liver, Oesophagus, Prostate, Skin]
+
+burdens:
+ normalization: "TRUE"
+
+dnds:
+  method: "dndscv"
+
+signatures:
+  method: "sigfit"
+  context: "SBS96"
