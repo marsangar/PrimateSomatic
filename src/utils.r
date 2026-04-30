@@ -31,3 +31,4 @@ save_plot <- function(plot, path, name, width = 8, height = 6) {
 log_message <- function(msg) {
   cat(sprintf("[%s] %s\n", Sys.time(), msg))
 }
+

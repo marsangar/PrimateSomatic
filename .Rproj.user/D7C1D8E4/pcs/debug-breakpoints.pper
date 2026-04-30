@@ -47,21 +47,6 @@
                 "package_name": ""
             },
             {
-                "id": 12,
-                "path": "~/Research/postdoc/projects/PrimateSomatic/Primate_master.r",
-                "line_number": 50,
-                "function_steps": "",
-                "function_name": "toplevel",
-                "state": 1,
-                "editor_state": 1,
-                "editor_line_number": 50,
-                "is_pending_debug_completion": false,
-                "needs_updated_steps": false,
-                "type": 1,
-                "is_package_breakpoint": false,
-                "package_name": ""
-            },
-            {
                 "id": 13,
                 "path": "~/Research/postdoc/projects/PrimateSomatic/scripts/Primate_dndscv.r",
                 "line_number": 55,
@@ -73,6 +58,21 @@
                 "is_pending_debug_completion": false,
                 "needs_updated_steps": false,
                 "type": 0,
+                "is_package_breakpoint": false,
+                "package_name": ""
+            },
+            {
+                "id": 18,
+                "path": "~/Research/postdoc/projects/PrimateSomatic/scripts/Primate_somatic.r",
+                "line_number": 9,
+                "function_steps": "",
+                "function_name": "toplevel",
+                "state": 1,
+                "editor_state": 1,
+                "editor_line_number": 9,
+                "is_pending_debug_completion": false,
+                "needs_updated_steps": true,
+                "type": 1,
                 "is_package_breakpoint": false,
                 "package_name": ""
             }

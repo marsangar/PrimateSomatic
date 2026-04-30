@@ -1,51 +1,58 @@
 # ============================================
-# PrimateSomatic Master Script
+# PrimateSomatic — Master Analysis Script
+# --------------------------------------------
 # Author: Martín Santamarina García
 # Contact: ms3242@cam.ac.uk
 # Date: 2026-04-21
-# Project: Comparative analyses of somatic mutational processes in primates across lifespans
+#
+# Project:
+# Comparative analysis of somatic mutational processes 
+# across primate species and tissues
 #
 # Description:
-# Main orchestrator script for the analysis of duplex sequencing genomic data:
-# - Germline / somatic filtering
-# - dN/dS estimation
-# - Driver screening
-# - Mutational signatures
-# - Mutation burden analysis
+# Central orchestrator for duplex sequencing analysis:
+#   • Germline / somatic filtering
+#   • dN/dS estimation
+#   • Driver mutation screening
+#   • Mutational signature analysis
+#   • Mutation burden estimation
 #
 # Species:
-# - Macaca mulatta
-# - Pan troglodytes
+#   • Macaca mulatta (Rhesus macaque)
+#   • Pan troglodytes (Chimpanzee)
 #
 # Technologies:
-# - NanoSeq
-# - Targeted NanoSeq
+#   • NanoSeq
+#   • Targeted NanoSeq
 #
-# Output:
-# - Versioned results: v0.1,v0.2,v0.3... (exploratory) // v1.0, v1.1, v1.2.. (publication) 
+# Outputs:
+#   • Versioned results:
+#       - v0.x → exploratory / preliminary
+#       - v1.x → manuscript-ready
 #
 # Reproducibility:
-# - renv-managed environment
+#   • renv-managed environment
+#   • YAML-based configuration
+#   • HPC/local portability via paths.yaml
 # ============================================
 
 #### Clean environment
 rm(list = ls())
 gc()
+renv::restore()
 
-#### Load package manager
-if (!requireNamespace("renv", quietly = TRUE)) {
-  install.packages("renv")
-}
-renv::activate()
-
-#### Load core packages
-library(dplyr)
+#### Load core libraries
 library(data.table)
+library(dplyr)
+library(dndscv)
 library(ggplot2)
+library(gridExtra)
 library(openxlsx)
 library(yaml)
+library(stringr)
 
-#### Load project configuration
+
+#### Load configuration
 paths_config <- yaml::read_yaml("config/paths.yaml")
 project_config <- yaml::read_yaml("config/project.yaml")
 species_config <- yaml::read_yaml("config/species.yaml")
@@ -54,22 +61,47 @@ tech_config    <- yaml::read_yaml("config/technology.yaml")
 source("config/paths.r")
 source("config/palette.R")
 
-#### Load metadata
-dataMETA_macaca<-read.xlsx("metadata/metadata_Macaca_mulatta.xlsx")
-dataMETA_pan<-read.xlsx("metadata/metadata_Pan_troglodytes.xlsx")
-
-#### Load internal functions
+#### Load internal modules
 source("src/utils.r")
-
-#### Load external toolkit
-#source("/software/team294/ms84/genomic_toolkit/")
+source("src/genomic_toolkit.r")
 
 #### Define global parameters
-SPECIES    <- "Macaca_mulatta"        # or "Pan_troglodytes"
-REFERENCE <- "Mmul_10"
-TECH       <- "nanoseq"        # or "targeted_nanoseq"
 VERSION    <- "v0.1"       # v0.1 / v0.2 / v0.3
-RUN_MODE   <- "full"           # full / test / debug
+SPECIES    <- "Macaca_mulatta"        # "Pan_troglodytes"
+TECH       <- "targeted_nanoseq"        # "nanoseq"
+VCF_DIR    <- "~/volumes/ms84_lustre/scratch126/casm/teams/team294/projects/cseg/PrimateSomatic/Macaca_mulatta/targeted_nanoseq/cohort/VCF/filtered/"
+COV_DIR    <- NA
+METADATA   <- "metadata/metadata_Macaca_mulatta.xlsx"
+GERMLINE   <- "~/volumes/ms84_lustre/scratch126/casm/teams/team294/projects/cseg/PrimateSomatic/Macaca_mulatta/targeted_nanoseq/GERMLINE/pileup_genotype_COMBINED.txt"
+RESULT_DIR <- file.path("results",VERSION, SPECIES, TECH)
+REF  <- "/lustre/scratch126/casm/teams/team294/projects/cseg/resources/reference_genomes/Macaca_mulatta/Mmul_10/reference_files/genome.fa"
+REFCDS<-"resources/RefCDS/RefCDS_Macaca_mulatta.Mmul_10.rda"
 
 
+#### Derived paths
+DATASET_ID <- paste(SPECIES, TECH, VERSION, sep = "_")
+log_message(paste("Running:", DATASET_ID))
+
+#### Create RESULT_DIR (if not existing)
+make_dir(RESULT_DIR)
+
+if(TECH=="targeted_nanoseq"){
+  make_dir(file.path(RESULT_DIR, "qc"))
+  make_dir(file.path(RESULT_DIR, "variants/filtered"))
+  make_dir(file.path(RESULT_DIR, "variants/annotated"))
+  make_dir(file.path(RESULT_DIR, "burdens"))
+  make_dir(file.path(RESULT_DIR, "spectra"))
+  make_dir(file.path(RESULT_DIR, "drivers/dnds"))
+  make_dir(file.path(RESULT_DIR, "drivers/tier1"))
+  make_dir(file.path(RESULT_DIR, "drivers/tier1"))
+}
+
+if(TECH=="nanoseq"){
+  make_dir(file.path(RESULT_DIR, "qc"))
+  make_dir(file.path(RESULT_DIR, "variants/filtered"))
+  make_dir(file.path(RESULT_DIR, "variants/annotated"))
+  make_dir(file.path(RESULT_DIR, "burdens/"))
+  make_dir(file.path(RESULT_DIR, "spectra/"))
+  make_dir(file.path(RESULT_DIR, "signatures/"))
+}
 
