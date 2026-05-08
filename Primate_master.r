@@ -73,35 +73,39 @@ VCF_DIR    <- "~/volumes/ms84_lustre/scratch126/casm/teams/team294/projects/cseg
 COV_DIR    <- NA
 METADATA   <- "metadata/metadata_Macaca_mulatta.xlsx"
 GERMLINE   <- "~/volumes/ms84_lustre/scratch126/casm/teams/team294/projects/cseg/PrimateSomatic/Macaca_mulatta/targeted_nanoseq/GERMLINE/pileup_genotype_COMBINED.txt"
-RESULT_DIR <- file.path("results",VERSION, SPECIES, TECH)
+RESDIR <- file.path("results",VERSION, SPECIES, TECH)
 REF  <- "/lustre/scratch126/casm/teams/team294/projects/cseg/resources/reference_genomes/Macaca_mulatta/Mmul_10/reference_files/genome.fa"
 REFCDS<-"resources/RefCDS/RefCDS_Macaca_mulatta.Mmul_10.rda"
-
+PANEL<-"~/volumes/ms84_lustre/scratch126/casm/teams/team294/projects/cseg/resources/panels/Macaca_mulatta/Mmul_10/Sanger_TERT-v4_TE-95148282_hg19_highstringencyfilter_buccal_gene_list.tsv"
 
 #### Derived paths
 DATASET_ID <- paste(SPECIES, TECH, VERSION, sep = "_")
 log_message(paste("Running:", DATASET_ID))
 
-#### Create RESULT_DIR (if not existing)
-make_dir(RESULT_DIR)
+#### Create RESDIR (if not existing)
+make_dir(RESDIR)
+
+RESDIR_QC<-paste0(RESDIR,"/", "qc")
+RESDIR_VARIANTS<-paste0(RESDIR,"/", "variants")
+RESDIR_BURDENS<-paste0(RESDIR,"/", "burdens")
+RESDIR_SPECTRA<-paste0(RESDIR,"/", "spectra")
+RESDIR_SIGNATURES<-paste0(RESDIR,"/", "signatures")
+RESDIR_DRIVERS<-paste0(RESDIR,"/", "drivers")
+
+
 
 if(TECH=="targeted_nanoseq"){
-  make_dir(file.path(RESULT_DIR, "qc"))
-  make_dir(file.path(RESULT_DIR, "variants/filtered"))
-  make_dir(file.path(RESULT_DIR, "variants/annotated"))
-  make_dir(file.path(RESULT_DIR, "burdens"))
-  make_dir(file.path(RESULT_DIR, "spectra"))
-  make_dir(file.path(RESULT_DIR, "drivers/dnds"))
-  make_dir(file.path(RESULT_DIR, "drivers/tier1"))
-  make_dir(file.path(RESULT_DIR, "drivers/tier1"))
+  make_dir(file.path(RESDIR_QC))
+  make_dir(file.path(RESDIR_VARIANTS))
+  make_dir(file.path(RESDIR_SPECTRA))
+  make_dir(file.path(RESDIR_DRIVERS))
 }
 
 if(TECH=="nanoseq"){
-  make_dir(file.path(RESULT_DIR, "qc"))
-  make_dir(file.path(RESULT_DIR, "variants/filtered"))
-  make_dir(file.path(RESULT_DIR, "variants/annotated"))
-  make_dir(file.path(RESULT_DIR, "burdens/"))
-  make_dir(file.path(RESULT_DIR, "spectra/"))
-  make_dir(file.path(RESULT_DIR, "signatures/"))
+  make_dir(file.path(RESDIR_QC))
+  make_dir(file.path(RESDIR_VARIANTS))
+  make_dir(file.path(RESDIR_BURDENS))
+  make_dir(file.path(RESDIR_SPECTRA))
+  make_dir(file.path(RESDIR_SIGNATURES))
 }
 

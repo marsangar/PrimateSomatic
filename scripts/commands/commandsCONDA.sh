@@ -37,7 +37,7 @@ conda info
 
 cd /home/ms3242/rds/rds-dog-de-novo-mXW0tnsCK5M/software/conda_envs
 
-### remove conda evnvironment
+### remove conda environment
 #conda remove -n dupcaller_v1.0.4_cb2f352 --all
 
 #### dupcaller conda environments ####
