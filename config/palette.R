@@ -25,11 +25,20 @@ tissue_cols <- c(
 
 
 ## Impact palette
+#impact_cols <- c(
+#  "None"              = "white",
+#  "Missense"          = "#FDB462",
+#  "Essential_Splice"  = "#377EB8",
+#  "Nonsense"          = "#E41A1C",
+#  "Stop_loss"         = "#984EA3"
+#)
+
 impact_cols <- c(
-  "None"              = "white",
+  "Synonymous"        = "gray",
   "Missense"          = "#FDB462",
   "Essential_Splice"  = "#377EB8",
   "Nonsense"          = "#E41A1C",
-  "Stop_loss"         = "#984EA3"
+  "Stop_loss"         = "#984EA3",
+  "no-SNV"            = "black"
 )
 

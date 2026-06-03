@@ -467,8 +467,36 @@ WORKDIR=/lustre/scratch126/casm/teams/team294/projects/cseg/PrimateSomatic/Macac
 cd $WORKDIR
 for a in ./analysis/*REPORT.kraken; do echo $a `egrep "(Bos taurus)|(Sus scrofa)|(Meleagris gallopavo)|(Gallus gallus)|(Oryctolagus cuniculus)|(Mus musculus)|(Equus caballus)|(Ovis aries)|(Macaca mulatta)|(Homo sapiens)" $a|sort -k2,2n| tail -1`; done|tr ' ' '\t' | sort -k2,2n -r > KRAKEN.RESULTS.tsv
 
+for a in ./analysis/*REPORT.kraken; do echo $a `egrep "(Macaca mulatta)" $a|sort -k2,2n| tail -1`; done|tr ' ' '\t' | sort -k2,2n -r > KRAKEN.RESULTS.tsv
 
 
+##############################
+###### clean_ns Pipeline #####
+##############################
+
+See https://gitlab.internal.sanger.ac.uk/yi1/clean_ns
+
+# 1- Prepare and cd to a dedicated staging area where symlinks to filtered bams are stored under ./contaminated/ under the name {sampleID}.bam (i.e. contaminated/PD69593a_tds0001.bam)
+done
+
+# 2- Prepare sample_list_preproc.txt under the root of the staging area. This is a text file with each line a PD ID (i.e. PD69593a_tds0001).
+done
+
+# 3 - cd to the staging area. Extract fastqs: bash {path to the repo}/01_write_fastq.sh
+cd /lustre/scratch126/casm/teams/team294/projects/cseg/PrimateSomatic/Macaca_mulatta/targeted_nanoseq/clean_ns
+bash /software/team294/cseg/clean_ns/src/01_write_fastq.sh
+
+# 4 - Map to a chimeric reference genome:
+cd /lustre/scratch126/casm/teams/team294/projects/cseg/PrimateSomatic/Macaca_mulatta/targeted_nanoseq/clean_ns
+bash /software/team294/cseg/clean_ns/src/02_map_to_chimeric.sh /lustre/scratch126/casm/teams/team294/projects/cseg/resources/hybrid_genomes/macaca_human/macaca_human.fa
+
+# 5 - Extract reads mapped to macaca contigs:
+cd /lustre/scratch126/casm/teams/team294/projects/cseg/PrimateSomatic/Macaca_mulatta/targeted_nanoseq/clean_ns
+bash /software/team294/cseg/clean_ns/src/03_extract_macaca_reads.sh 
+
+# 6 Prepare random reads in bundles:
+cd /lustre/scratch126/casm/teams/team294/projects/cseg/PrimateSomatic/Macaca_mulatta/targeted_nanoseq/clean_ns
+bash /software/team294/cseg/clean_ns/src/04_dedupe_bam.sh
 
 
 

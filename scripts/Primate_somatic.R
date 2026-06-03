@@ -1,3 +1,10 @@
+# ============================================
+# Title: Primate somatic script
+# Author: Martín Santamarina García (ms84@sanger.ac.uk)
+# Description: This script implements qc and filtering steps to retrieve somatic variant calls
+# ============================================
+
+
 ### Load configs
 source("/Users/ms84/Research/postdoc/projects/PrimateSomatic/Primate_master.r")
 
@@ -11,6 +18,8 @@ dataVCF$POS<-as.integer(dataVCF$start)
 dataVCF$REF<-toupper(dataVCF$REF)
 dataVCF$ALT<-toupper(dataVCF$ALT)
 
+dataVCF$chr<-rename_chroms(dataVCF$CHROM, from = "RefSeq.seq.accession", to="Sequence.name", ncbi_report = NCBI_REPORT)
+
 
 dataVCF$DPLX_NM <- sapply(dataVCF$DPLX_NM, function(v) if (length(v) > 0) v[1] else NA_integer_)
 
@@ -21,9 +30,14 @@ dataVCF$variant_id_complete<-paste0(dataVCF$CHROM,"_",dataVCF$POS, "_", dataVCF$
 ### Load metadata
 dataMETA<-read.xlsx(METADATA)
 
+### Load kraken results
+dataKRAKEN<-read.delim(KRAKEN, header = FALSE)
+colnames(dataKRAKEN)[2]<-c("kraken_percent")
+dataKRAKEN$sample<-str_split_fixed(dataKRAKEN$V1,"analysis/|_",3)[,2]
+
 ### Annotate VCFs with metadata
 dataVCF_annot <- dataVCF %>% dplyr::left_join(dataMETA, by = "sample")
-dataVCF_annot
+dataVCF_annot <- dataVCF_annot %>% dplyr::left_join(dataKRAKEN[,c("sample","kraken_percent")], by = "sample")
 
 ### Sort VCFs based on tissue
 dataVCF_sorted<- dataVCF_annot %>% dplyr::arrange(tissue,sample,CHROM,POS)
@@ -57,9 +71,14 @@ plot_qc_metric(dataVCF_sorted, "DUPLEX_VAF", plot_type = "density", group_by = "
 dev.off()
 
 
+### Load germline variants based according to pile-up
+dataGERMLINE<-read.delim(GERMLINE)
+dataGERMLINE$variant_id<-paste0(dataGERMLINE$NC_CHROM, "_", dataGERMLINE$POS)
+
+
 ### Perfom Somatic Filtering
-dim(dataVCF)
-dataSOM<-dataVCF_sorted[dataVCF_sorted$TYPE %in% c("snv", "del", "ins") &  dataVCF_sorted$shared_across_samples==FALSE & dataVCF_sorted$DPLX_NM %in% c(1, NA) & dataVCF_sorted$FILTER %in% "PASS",c("sample","CHROM", "POS", "REF", "ALT","age", "tissue", "TIMES_CALLED", "TYPE", "variant_id","variant_id_complete", "species", "shared_across_samples","shared_across_individuals", "FILTER", "DPLX_NM","DUPLEX_COV","BAM_COV", "DUPLEX_VAF", "BAM_VAF")]
+dataSOM<-dataVCF_sorted[dataVCF_sorted$TYPE %in% c("snv", "del", "ins") &  dataVCF_sorted$shared_across_samples==FALSE & dataVCF_sorted$DPLX_NM %in% c(1, NA) & dataVCF_sorted$FILTER %in% "PASS" & (!dataVCF_sorted$variant_id %in% dataGERMLINE$variant_id),c("sample","CHROM", "POS", "REF", "ALT","age", "tissue", "TIMES_CALLED", "TYPE", "variant_id","variant_id_complete", "species", "shared_across_samples","shared_across_individuals", "FILTER", "DPLX_NM","DUPLEX_COV","BAM_COV", "DUPLEX_VAF", "BAM_VAF", "kraken_percent", "chr")]
+
 dataSOM$DPLX_NM
 dim(dataSOM) #
 table(dataSOM$TYPE)
@@ -91,7 +110,7 @@ globaldnds <- bind_rows(
 
 
 ### add tissue metadata
-sample_annot <- dataSOM %>% dplyr::select(sample, tissue, age) %>% distinct() %>% dplyr::rename(sample=sample)
+sample_annot <- dataSOM %>% dplyr::select(sample, tissue, age, kraken_percent) %>% distinct() %>% dplyr::rename(sample=sample)
 
 ### join with your dN/dS table
 globaldnds <- globaldnds %>% left_join(sample_annot, by = "sample")
@@ -161,98 +180,93 @@ pdf(paste0(RESDIR_QC,"/globaldnds.pdf"),  width = 12, height = 7)
 grid.arrange(p1)
 dev.off()
 
-### dndscv outputs: Table of significant genes
-sel_cv = dndsout$sel_cv
-signif_genes<-sel_cv[sel_cv$qglobal_cv<0.1,]
-nrow(signif_genes) # 130 genes
-top_signif_genes<-signif_genes[signif_genes$qglobal_cv==0,c(1:10,20)]
-top_signif_genes
-write.xlsx(top_signif_genes,"/Users/ms84/Research/postdoc/projects/PrimateSomatic/05_results/prelim/macaca_mulatta/nanoseq_targeted/RG25/top_significant_genes.xlsx")
 
 
+### Correlation between dnds & kraken percent (proxy of purity)
+
+### Consider all variants (wall)
+globaldnds_wall<-globaldnds[globaldnds$name=="wall",]
+
+# Correlation test
+cor_res <- cor.test(
+  globaldnds_wall$mle,
+  globaldnds_wall$kraken_percent,
+  method = "pearson"
+)
+
+# Correlation label
+cor_label <- paste0(
+  "r = ", round(cor_res$estimate, 3),
+  "\np = ", signif(cor_res$p.value, 3)
+)
+
+# Set threshold value 
+threshold <- 50 ### 
+
+# Plot
+p<-ggplot(
+  globaldnds_wall,
+  aes(
+    x = mle,
+    y = kraken_percent,
+    color = tissue  # column containing tissue labels
+  )
+) +
+  
+  geom_point(
+    size = 3,
+    alpha = 0.9
+  ) +
+  
+  # Add sample labels
+  geom_text_repel(
+    aes(label = sample),   # replace with your sample-name column
+    size = 3.5,
+    max.overlaps = Inf
+  ) +
+  
+  # Linear regression + 95% CI
+  geom_smooth(
+    method = "lm",
+    formula = y ~ x,
+    se = TRUE,
+    color = "black",
+    fill = "gray70",
+    alpha = 0.2,
+    linewidth = 1
+  ) + 
+  
+  # Horizontal threshold line
+  #geom_hline(yintercept = threshold,linetype = "dashed",color = "red",linewidth = 0.3) +
+  
+  annotate(
+    "text",
+    x = Inf,
+    y = Inf,
+    label = cor_label,
+    hjust = 1.1,
+    vjust = 1.5,
+    size = 5
+  ) +
+  
+  labs(
+    x = "dN/dS (MLE)",
+    y = "Kraken percent macaque",
+    color = "Tissue type",
+    title = "Correlation between dN/dS and sample purity"
+  ) +
+  
+  theme_classic(base_size = 14)
+
+pdf(paste0(RESDIR_QC,"/kraken_vs_dnds.pdf"),  width = 9, height = 5)
+grid.arrange(p)
+dev.off()
 
 ### write Somatic Variants
 write.table(dataSOM, file=paste0(RESDIR_VARIANTS,"/somatic_variants.txt"), quote = FALSE, sep="\t", row.names = FALSE)
 
 
+### write Somatic Variants annotated with dndscv
+write.table(dndsout$annotmuts,paste0(RESDIR_VARIANTS, "/annotated_mutations.txt"), quote = FALSE, sep="\t", row.names = FALSE)
 
 
-
-
-# Load libraries
-library(tidyverse)
-
-# Example data
-df <- tribble(
-  ~gene_name, ~n_syn, ~n_mis, ~n_non, ~n_spl, ~n_ind,
-  "ARID2", 7,13,3,1,3,
-  "KMT2C", 4,19,4,0,8,
-  "MGA", 6,18,2,1,5,
-  "TET2", 7,14,2,0,3,
-  "ERBB4",12,15,1,1,0,
-  "ROBO2",9,14,0,2,1,
-  "NOTCH3",5,15,1,1,4,
-  "CHD4",6,13,0,2,1,
-  "FAT1",6,31,0,2,6,
-  "KMT2D",8,25,2,0,6,
-  "KMT2E",4,14,1,0,2,
-  "ZFHX3",14,19,1,0,4,
-  "FAT2",8,22,0,1,5,
-  "FAT4",13,26,1,0,2,
-  "ATM",5,14,1,0,3,
-  "MTOR",6,15,0,0,2,
-  "APC",3,18,0,0,4,
-  "PREX2",7,16,0,0,0,
-  "MET",2,12,0,0,1,
-  "KDM6A",7,11,1,3,4,
-  "CBLB",2,8,1,3,1,
-  "CUL3",1,7,3,1,1,
-  "NF1",7,13,0,1,6
-)
-
-df<-dndsout$sel_cv[,c("gene_name", "n_syn", "n_mis", "n_non", "n_spl", "n_ind")]
-dim(df)
-
-# Convert to long format
-df_long <- df %>%
-  pivot_longer(
-    cols = starts_with("n_"),
-    names_to = "mutation_type",
-    values_to = "count"
-  )
-
-# Optional: order genes by total mutation burden
-gene_order <- df %>%
-  mutate(total = n_syn + n_mis + n_non + n_spl + n_ind) %>%
-  arrange(desc(total)) %>%
-  pull(gene_name)
-
-df_long$gene_name <- factor(df_long$gene_name, levels = gene_order)
-
-# Rename mutation classes for prettier legend
-df_long$mutation_type <- recode(
-  df_long$mutation_type,
-  n_syn = "Synonymous",
-  n_mis = "Missense",
-  n_non = "Nonsense",
-  n_spl = "Splice",
-  n_ind = "Indel"
-)
-
-# Stacked barplot
-ggplot(df_long, aes(x = gene_name, y = count, fill = mutation_type)) +
-  geom_bar(stat = "identity", width = 0.8) +
-  coord_flip() +
-  labs(
-    title = "Mutation Counts per Gene",
-    x = "Gene",
-    y = "Mutation Count",
-    fill = "Mutation Type"
-  ) +
-  theme_minimal(base_size = 13) +
-  theme(
-    panel.grid.major.y = element_blank(),
-    axis.text.y = element_text(face = "bold"),
-    legend.position = "right"
-  ) +
-  scale_fill_brewer(palette = "Set2")

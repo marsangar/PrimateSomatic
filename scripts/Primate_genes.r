@@ -1,0 +1,351 @@
+# ============================================
+# Title: Primate genes script
+# Author: Martín Santamarina García (ms84@sanger.ac.uk)
+# Description: This script implements targeted genes screening and mutation analysis
+# ============================================
+
+### Load configs
+source("/Users/ms84/Research/postdoc/projects/PrimateSomatic/Primate_master.r")
+source("/Users/ms84/Research/postdoc/projects/PrimateSomatic/resources/Primate_annotation.r")
+
+### Load Genes in the panel 
+dataPANEL<-read.delim(PANEL)
+panelgenes<-dataPANEL$gene
+panelgenes_filt<-panelgenes[!panelgenes %in% c("H3F3A", "RHOB", "NFKBIZ", "HIST1H3B", "HIST1H2BD", "HLA-A", "HLA-B", "PIM1", "CDKN2A.p16INK4a", "CDKN2A.p14arf", "FAS", "KLF5", "ERCC5", "HOXB3", "H3F3B", "MEF2B", "CEBPA", "PAK7", "FAM58A")]
+
+### Load Somatic mutation callset
+dataMUT<-read.delim(paste0(RESDIR_VARIANTS,"/annotated_mutations.txt"))
+dataMUT$chr<-rename_chroms(dataMUT$chr, from = "RefSeq.seq.accession", to="Sequence.name", ncbi_report = NCBI_REPORT)
+head(dataMUT)
+
+
+#########################################################
+### Duplex coverage analysis across samples and genes ###
+#########################################################
+
+### List coverage files from COV_DIR
+cov_files <- list.files(COV_DIR, pattern = "*.cov.bed.gz$",full.names = TRUE)
+#cov_files<-cov_files[1:2] # subset for dev
+
+### Load coverage files into a list & reformat
+cov_list <- lapply(cov_files, function(f) {
+  
+  print(paste0("Loading:", f))
+  df<-read.delim(f, header = FALSE)
+  df$chr<-rename_chroms(df$V1,from = "RefSeq.seq.accession", to="Sequence.name", ncbi_report = NCBI_REPORT)
+  df$start<-df$V2
+  df$end<-df$V3
+  df$coverage<-as.integer(str_split_fixed(df$V4,";",3)[,3])
+  df$sample <- basename(f)
+  
+  return(df[, c("chr", "start", "end", "coverage", "sample")])
+  
+})
+names(cov_list) <- basename(cov_files)
+str(cov_list)
+
+### Convert list of coverage data.frames into list of coverage genomic.ranges objects
+gr_list <- lapply(cov_list, function(df) {
+  GRanges(
+    seqnames = df$chr,
+    ranges = IRanges(start = df$start, end = df$end),
+    coverage = df$coverage,
+    sample = df$sample
+  )
+})
+
+
+######################################
+##### Compute coverage matrices ######
+######################################
+
+### Resolution:
+# A) gene-level
+# B) exon-level
+# C) bin-level
+
+### A) Compute genes x samples coverage matrix
+cov_genes_mat <- matrix(NA, nrow = length(grGENES), ncol = length(gr_list))
+colnames(cov_genes_mat) <- names(gr_list)
+
+### For each sample under analysis
+for (i in seq_along(gr_list)) {
+  ## search for overlapping
+  hits <- findOverlaps(grGENES, gr_list[[i]])
+  
+  # extract values
+  qh <- queryHits(hits)
+  sh <- subjectHits(hits)
+  cov_vals <- mcols(gr_list[[i]])$coverage[sh]
+  
+  # aggregate coverage per gene
+  cov_by_gene <- tapply(cov_vals, qh, mean)
+  cov_genes_mat[as.integer(names(cov_by_gene)), i] <- cov_by_gene
+}
+cov_genes_mat
+
+
+### B) Compute exons x samples coverage matrix
+cov_exons_mat <- matrix(NA, nrow = length(grEXONS), ncol = length(gr_list))
+colnames(cov_exons_mat) <- names(gr_list)
+
+#### For each sample under analysis
+for (i in seq_along(gr_list)) {
+  ## search for overlapping
+  hits <- findOverlaps(grEXONS, gr_list[[i]])
+  
+  # extract values
+  qh <- queryHits(hits)
+  sh <- subjectHits(hits)
+  cov_vals <- mcols(gr_list[[i]])$coverage[sh]
+  
+  # aggregate coverage per exon
+  cov_by_exon <- tapply(cov_vals, qh, mean)
+  cov_exons_mat[as.integer(names(cov_by_exon)), i] <- cov_by_exon
+}
+cov_exons_mat
+dim(cov_exons_mat)
+
+
+### C) Compute bins × samples coverage matrix
+cov_bins_mat <- matrix(NA, nrow = length(grBINS), ncol = length(gr_list))
+colnames(cov_bins_mat) <- names(gr_list)
+
+#### For each sample under analysis
+for (i in seq_along(gr_list)) {
+  ## search for overlapping
+  hits <- findOverlaps(grBINS, gr_list[[i]])
+  
+  # extract values
+  qh <- queryHits(hits)
+  sh <- subjectHits(hits)
+  cov_vals <- mcols(gr_list[[i]])$coverage[sh]
+  
+  # aggregate coverage per bin
+  cov_by_bin <- tapply(cov_vals, qh, mean)
+  cov_bins_mat[as.integer(names(cov_by_bin)), i] <- cov_by_bin
+}
+cov_bins_mat
+
+
+### Compute summaries across samples in the cohort (!!! double-check)
+gene_median_cov <- apply(cov_genes_mat, 1, median, na.rm = TRUE)
+gene_max_cov <- apply(cov_genes_mat, 1, max)
+gene_min_cov <- apply(cov_genes_mat, 1, min)
+gene_sd_cov <- apply(cov_genes_mat, 1, sd, na.rm = TRUE)
+
+exon_median_cov <- apply(cov_exons_mat, 1, median, na.rm = TRUE)
+exon_max_cov <- apply(cov_exons_mat, 1, max)
+exon_min_cov <- apply(cov_exons_mat, 1, min)
+exon_sd_cov <- apply(cov_exons_mat, 1, sd, na.rm = TRUE)
+
+bin_median_cov <- apply(cov_bins_mat, 1, median, na.rm = TRUE)
+bin_max_cov <- apply(cov_bins_mat, 1, max)
+bin_min_cov <- apply(cov_bins_mat, 1, min)
+bin_sd_cov <- apply(cov_bins_mat, 1, sd, na.rm = TRUE)
+
+
+### Incorporate coverage info into annotation objects
+dataGENES$gene_median_cov<-gene_median_cov
+dataGENES$gene_max_cov<-gene_max_cov
+dataGENES$gene_min_cov<-gene_min_cov
+dataGENES$gene_sd_cov<-gene_sd_cov
+
+dataEXONS$exon_median_cov<-exon_median_cov
+dataEXONS$exon_max_cov<-exon_max_cov
+dataEXONS$exon_min_cov<-exon_min_cov
+dataEXONS$exon_sd_cov<-exon_sd_cov
+
+# check headers
+head(dataGENES)
+head(dataEXONS)
+head(dataEXONS[dataEXONS$external_gene_name %in% "TP53",])
+
+### Aggregate exon information for each gene
+dfAGG <- aggregate(
+  exon_median_cov ~ external_gene_name,
+  data = dataEXONS,
+  FUN = function(x) c(
+    median = median(x, na.rm = TRUE),
+    max = max(x, na.rm = TRUE),
+    mean = mean(x, na.rm = TRUE),
+    min = min(x, na.rm = TRUE),
+    sd = sd(x, na.rm = TRUE),
+    n = sum(!is.na(x))
+  )
+)
+dfAGG
+
+dataGENES$exon_median_cov.median<-NA
+dataGENES[match(dfAGG$external_gene_name, dataGENES$external_gene_name),"exon_median_cov.median"]<-dfAGG
+
+###
+median(dataGENES[dataGENES$external_gene_name %in% dataPANEL$gene,"median_exon_median_cov"], na.rm=TRUE)
+
+median(dataEXONS[,"exon_median_cov"], na.rm = TRUE)
+median(dataEXONS[dataEXONS$external_gene_name %in% dataPANEL$gene,"exon_median_cov"], na.rm = TRUE)
+
+###################################################
+### Restrict the analysis to genes in the panel ###
+###################################################
+
+### Inspect genes in panel
+dataPANEL$gene
+
+### Subset with genes in panel & add target type
+dataGENES_panel<-dataGENES[dataGENES$external_gene_name %in% dataPANEL$gene,]
+dataGENES_panel$target_type<-dataPANEL[match(dataGENES_panel$external_gene_name, dataPANEL$gene),"target_type"]
+grGENES_panel<-toGRanges(dataGENES_panel)
+
+### check missing genes (!)
+dataPANEL$gene[!dataPANEL$gene %in% dataGENES_panel$external_gene_name]
+
+## Set zoom coordinates
+dataGENES_panel$zoom_coordinates<-paste0(dataGENES_panel$chr,":", dataGENES_panel$start_position-1000,"-", dataGENES_panel$end_position+1000)
+dataGENES_panel$chr
+
+
+##############################
+#### Screen Coverage Tool ####
+##############################
+
+## Set plotting parameters
+#plotDefaultPlotParams()
+pp <- getDefaultPlotParams(plot.type=1)
+pp$data1inmargin <- 5
+pp$ideogramheight <- 20
+#pp$topmargin <- 480
+
+### Create Screen data.frame with target genes in chromosomes
+dataSCREEN<-dataGENES_panel[dataGENES_panel$chr %in% paste0("chr",c(1:20,"X","Y")),]
+#dataSCREEN<-dataSCREEN[dataSCREEN$external_gene_name %in% c("TP53", "NOTCH1", "NOTCH2", "NOTCH3", "CUL3", "KEAP1", "AKT", "ILR7", "PTEN", "ALB", "FGA", "CBLB", "CHD4"),] # subset for dev
+#dataSCREEN<-dataSCREEN[dataSCREEN$external_gene_name %in% c("TP53"),] # subset for dev
+
+head(dataSCREEN)
+dim(dataSCREEN)
+
+i=3
+pdf(paste0(RESDIR_GENES,"/screening_genes.pdf"),  width = 12, height = 8)
+
+### Iterate through the panel of genes
+for(i in 1:nrow(dataSCREEN)){
+  
+  ### Show progress
+  print(paste0("Screening gene number ", i))
+  
+  ## For each gene in the panel
+  gene<-dataSCREEN$external_gene_name[i]
+  print(gene)
+  target_type<-dataSCREEN$target_type[i]
+  print(target_type)
+  gene_size<-dataSCREEN$gene_size[i]
+  gene_size
+  strand<-ifelse(dataSCREEN$strand[i]=="1", "Positive", "Negative")
+  strand
+  zoom_coordinates<-dataSCREEN$zoom_coordinates[i]
+  zoom_coordinates
+  
+  ## Retrieve annotated mutations
+  dfMUT<-dataMUT[dataMUT$gene %in% gene,]
+  
+  ## Retrieve coverage per exon metrics
+  dfEXONS<-dataEXONS[dataEXONS$external_gene_name %in% gene,]
+  #dfEXONS<-mcols(grEXONS)[mcols(grEXONS)$external_gene_name %in% gene,]
+  dfEXONS
+  
+  missing_threshold<-200
+  
+  exon_nb<-nrow(dfEXONS)
+  
+  exon_median_cov<-median(dfEXONS$median_cov, na.rm = TRUE) ### (!) Only across those profiled
+  exon_min_cov<-min(dfEXONS$median_cov, na.rm = TRUE) ### improve
+  exon_max_cov<-max(dfEXONS$median_cov, na.rm = TRUE) ### improve
+  
+  ## Plot ideogram zooming to gene coordinates
+  kp<-plotKaryotype(genome = grGENOME,  main=gene, plot.type = 1, plot.params = pp, zoom = zoom_coordinates)
+  kpAddCytobandLabels(kp)
+  
+  
+  ## Report coordinates
+  #mtext(zoom_coordinates, line = 0,  col = "gray")
+  
+  
+  ## Report relevant coverage per exon metrics
+  mtext(paste0("Target type: ", target_type), line = -3)
+  mtext(paste0("Number of exons: ", exon_nb), line = -4)
+  mtext(paste0(strand, " strand"), line = -5)
+  #mtext(paste0("Median coverage: ", exon_median_cov, "X"), line = -5)
+  #mtext(paste0("Median coverage: ", exon_median_cov, " (", exon_min_cov, " - ", exon_max_cov, ")"), line = -4)
+  
+  abline(h=0.8, col="darkred", lty=2 , lwd=1)
+  
+  ### Display coverage across the gene
+  #kpArea(kp, chr = dataCOV$chr,  x=dataCOV$start, y=dataCOV$coverage,  ymax = 1000, col = "#007C7C")
+  
+  ### Plot coverage histograms (one per sample)
+  n <- length(gr_list)
+  
+  # Color palette (one per sample)
+  cols <- colorRampPalette(c("#007C7C", "#D95F02", "#7570B3"))(n)
+  
+  # Reserve plotting space
+  bottom_margin <- 0.18
+  top_margin <- 0.98
+  
+  track_height <- (top_margin - bottom_margin) / n
+  
+  for (j in seq_along(gr_list)) {
+    print("test")
+    
+    # Define vertical region for each sample
+    r0 <- bottom_margin + (j - 1) * track_height
+    r1 <- bottom_margin + j * track_height - 0.01
+    
+    kpArea(
+      kp,
+      data = gr_list[[j]],
+      y = gr_list[[j]]$coverage,
+      ymax = 1000,
+      r0 = r0,
+      r1 = r1,
+      col = adjustcolor(cols[j], alpha.f = 0.4),
+      border = NA
+    )
+    kpAxis(kp, data.panel=1, ymin = 0, ymax=1000, numticks = 5, side = 1, r0 = r0, r1 = r1, cex=0.2)
+    
+    
+    # Optional sample label
+    kpAddLabels(
+      kp,
+      labels = str_split_fixed(names(gr_list)[j], ".", 2)[,1],
+      r0 = r0,
+      r1 = r1,
+      position = "right",
+      cex = 0.5
+    )
+  }
+  kpAddLabels(kp, labels="Duplex coverage (X)", data.panel = 1, srt=90, r0 = 0.5, label.margin = 0.08)
+  
+  kpAddBaseNumbers(kp, tick.dist = gene_size/10, tick.len = 10, tick.col="darkred", cex=1, units = "auto", add.units="FALSE",	
+                   minor.tick.dist = gene_size/100, minor.tick.len = 5, minor.tick.col = "gray")
+  
+  
+  ### Plot mutations
+  kpPlotMarkers(kp, chr=dfMUT$chr, x=dfMUT$pos, labels=dfMUT$impact, label.col=impact_cols[dfMUT$impact], r0=0, r1=0.1, cex=0.7)
+  
+  ### Display gene structure
+  kpLines(kp, chr=dataSCREEN$chr[i], x=c(dataSCREEN$start_position[i], dataSCREEN$end_position[i]), y=c(0.025,0.025), lwd=5, col="darkgray")
+  kpRect(kp, chr = dfEXONS$chr, x0=dfEXONS$exon_chrom_start, x1=dfEXONS$exon_chrom_end, y0=0, y1=0.05, data.panel = 1, col="#D95F02")
+  
+  ### Legend
+  legend("topleft",legend = c("exon", "gene"), fill = c("#D95F02", "gray"), cex = 0.7)
+  legend("topright", title="Mutation impact", legend = names(impact_cols), fill = impact_cols, border = NA,cex = 0.7)
+  
+}
+dev.off()
+
+### Assess genes
+dataEXONS[dataEXONS$external_gene_name %in% "MYC",]
+dataEXONS[dataEXONS$external_gene_name %in% "TP53",]
+
+dataMUT[dataMUT$gene%in% "NOTCH1",]
