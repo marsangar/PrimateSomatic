@@ -16,6 +16,13 @@ bjobs -o estart_time
 bjobs -o start_time
 
 
+### Change directory permissions
+setfacl -Rm u:ab63:rx,d:u:ab63:rx /lustre/scratch126/casm/teams/team294/projects/cseg/
+
+
+### Check longing time
+ bjobs -l 568454
+
 
 ########################
 ### NanoSeq Cleaning ###

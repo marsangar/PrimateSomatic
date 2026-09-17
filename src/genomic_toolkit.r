@@ -286,3 +286,152 @@ rename_chroms<- function(x, from="RefSeq.seq.accession", to="Chromosome.name", n
   renamed<-report[match(x, report[,from]),to]
   return(renamed)
 }
+
+###
+
+# Function: normalise vector to sum to one
+normalise = function(x) { x / sum(x) }
+
+
+###########################
+#### Sequence Analysis #### 
+###########################
+
+# Function: reverse complement (for string vectors)
+rev.comp = function(nucleotide.list) {
+  sapply(nucleotide.list, function(nucleotides) {
+    paste(
+      rev(sapply(strsplit(nucleotides, "")[[1]], function(nuc) {
+        if (nuc == "A") "T"
+        else if (nuc == "C") "G"
+        else if (nuc == "G") "C"
+        else if (nuc == "T") "A"
+      })), collapse="")
+  }, USE.NAMES=F)
+}
+
+
+#######################################
+#### Mutational Signature Analysis #### 
+#######################################
+
+#------------------------------------------------------------
+# make_spectrum
+#
+# Generate a 96-channel SBS mutational spectrum from either:
+#   1) a VCF file, or
+#   2) a data.frame containing SNVs.
+#
+# Args:
+#   x      : Character string giving the path to a VCF file, or a
+#            data.frame with columns CHROM, POS, REF and ALT.
+#   dnaREF : BSgenome/DNA reference object used by get_context() to
+#            extract the trinucleotide sequence context.
+#
+# Returns:
+#   A named integer vector of length 96 containing the counts of each
+#   pyrimidine-normalized SBS mutation type (COSMIC ordering).
+#------------------------------------------------------------
+
+make_spectrum <- function(x, dnaREF){
+  
+  ## Read input
+  if (is.character(x) && length(x) == 1) {
+    
+    ## Input is a VCF file
+    vcf <- read.vcfR(x)
+    dataVCF <- as.data.frame(vcf@fix)
+    
+  } else if (is.data.frame(x)) {
+    
+    ## Input is already a data.frame of variants
+    dataVCF <- x
+    
+  } else {
+    
+    stop("Input must be either a VCF file path or a data.frame.")
+    
+  }
+  
+  ## Check that the required columns are present
+  required_cols <- c("CHROM", "POS", "REF", "ALT")
+  
+  if (!all(required_cols %in% colnames(dataVCF))) {
+    stop(
+      "Input data.frame must contain columns: ",
+      paste(required_cols, collapse = ", ")
+    )
+  }
+  
+  dataVCF$POS <- as.integer(dataVCF$POS)
+  
+  ## Keep SNVs only
+  dataVCF <- dataVCF[
+    nchar(dataVCF$REF) == 1 &
+      nchar(dataVCF$ALT) == 1,
+  ]
+  
+  ## Retrieve trinucleotide sequence context
+  dataVCF$contextREF <- mapply(
+    function(chr, pos) {
+      
+      ## Return NA if chromosome is absent from the reference
+      if (!(chr %in% names(dnaREF)))
+        return(NA_character_)
+      
+      ## Extract the reference trinucleotide
+      as.character(
+        subseq(dnaREF[[chr]], start = pos - 1, end = pos + 1)
+      )
+      
+    },
+    chr = as.character(dataVCF$CHROM),
+    pos = dataVCF$POS,
+    USE.NAMES = FALSE
+  )
+  
+  ## Build reference and alternate trinucleotide contexts
+  dataVCF$contextREF_5 <- substr(dataVCF$contextREF, 1, 1)
+  dataVCF$contextREF_3 <- substr(dataVCF$contextREF, 3, 3)
+  
+  dataVCF$contextALT <- paste0(
+    dataVCF$contextREF_5,
+    dataVCF$ALT,
+    dataVCF$contextREF_3
+  )
+  
+  ## Normalize mutations to the pyrimidine representation
+  idx <- dataVCF$REF %in% c("A", "G")
+  
+  dataVCF$contexREF_normalized <- dataVCF$contextREF
+  dataVCF$contexREF_normalized[idx] <-
+    as.character(reverseComplement(
+      DNAStringSet(dataVCF$contextREF[idx])
+    ))
+  
+  dataVCF$contextALT_normalized <- dataVCF$contextALT
+  dataVCF$contextALT_normalized[idx] <-
+    as.character(reverseComplement(
+      DNAStringSet(dataVCF$contextALT[idx])
+    ))
+  
+  dataVCF$mutation_normalized <- paste0(
+    dataVCF$contexREF_normalized,
+    ">",
+    dataVCF$contextALT_normalized
+  )
+  
+  ## Load COSMIC SBS96 mutation classes
+  data("cosmic_signatures_v2")
+  
+  ## Initialize the spectrum
+  mutations <- integer(96)
+  names(mutations) <- colnames(cosmic_signatures_v2)
+  
+  ## Count mutations belonging to each SBS96 class
+  tbl <- table(dataVCF$mutation_normalized)
+  mutations[names(tbl)] <- as.integer(tbl)
+  
+  return(mutations)
+}
+

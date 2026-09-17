@@ -31,14 +31,14 @@ grGENES<-toGRanges(dataGENES)
 
 
 ### Retrieve Exon Annotation
-exons<-getBM(attributes=c('chromosome_name','exon_chrom_start','exon_chrom_end', 'strand', 'ensembl_gene_id','external_gene_name', "ensembl_exon_id" ),
+exons<-getBM(attributes=c('chromosome_name','exon_chrom_start','exon_chrom_end', 'strand', 'ensembl_gene_id','external_gene_name', "ensembl_exon_id", "rank"),
                      #filters = 'chromosome_name', 
                      #values = '1', 
                     mart = ensembl)
 
 exons$chr<-paste0("chr",exons$chromosome_name)
 exons$exon_size<-exons$exon_chrom_end-exons$exon_chrom_start
-dataEXONS<-exons[,c('chr','exon_chrom_start','exon_chrom_end', 'strand', 'exon_size', 'ensembl_gene_id','external_gene_name', "ensembl_exon_id")]
+dataEXONS<-exons[,c('chr','exon_chrom_start','exon_chrom_end', 'strand', 'exon_size', 'ensembl_gene_id','external_gene_name', "ensembl_exon_id", "rank")]
 grEXONS<-toGRanges(dataEXONS)
 
 
@@ -58,4 +58,18 @@ grBINS <- tileGenome(
   cut.last.tile.in.chrom = TRUE
 )
 grBINS
+
+dataEXONS[dataEXONS$external_gene_name %in% "TP53",]
+dataEXONS[dataEXONS$external_gene_name %in% "MYC",]
+
+### improve this file (!)
+#BED<-dataEXONS[dataEXONS$external_gene_name %in% panelgenes_filt,]
+#BED[,c("chr","exon_chrom_start", "exon_chrom_end", "external_gene_name", "rank")]
+#BED$chr<-rename_chroms(BED$chr, from = "UCSC.style.name", to="RefSeq.seq.accession", ncbi_report = NCBI_REPORT)
+#BED$gene_exon<-paste0(BED$external_gene_name, "_", BED$rank)
+#BED<-BED[!duplicated(BED$gene_exon),]
+#dim(BED)
+#table(BED$external_gene_name)
+#WRITE<-BED[c("chr","exon_chrom_start", "exon_chrom_end", "gene_exon")]
+#write.table(WRITE, "~/volumes/ms84_lustre/scratch126/casm/teams/team294/projects/cseg/PrimateSomatic/Macaca_mulatta/targeted_nanoseq/panel/targeted_panel_gene_exons.bed", sep="\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
 

@@ -11,10 +11,11 @@ library(dplyr)
 library(ggplot2)
 library(ggrepel)
 
+
 ### Set samples to exclude because of contamination
 dataMETA$sample
-excluded_samples_tier1<-dataKRAKEN[dataKRAKEN$kraken_percent<40,"sample"]
-excluded_samples_tier2<-dataKRAKEN[dataKRAKEN$kraken_percent<60,"sample"]
+excluded_samples_tier1<-dataKRAKEN_macaca[dataKRAKEN_macaca$kraken_percent<40,"sample"]
+excluded_samples_tier2<-dataKRAKEN_macaca[dataKRAKEN_macaca$kraken_percent<60,"sample"]
 
 ### Load Mutation Data
 dataSOM<-read.delim(paste0(RESDIR_VARIANTS,"/somatic_variants.txt"))
@@ -24,9 +25,87 @@ dataPANEL<-read.delim(PANEL)
 panelgenes<-dataPANEL$gene
 panelgenes_filt<-panelgenes[!panelgenes %in% c("H3F3A", "RHOB", "NFKBIZ", "HIST1H3B", "HIST1H2BD", "HLA-A", "HLA-B", "PIM1", "CDKN2A.p16INK4a", "CDKN2A.p14arf", "FAS", "KLF5", "ERCC5", "HOXB3", "H3F3B", "MEF2B", "CEBPA", "PAK7", "FAM58A")]
   
+### Load duplex coverage info
+library(tidyverse)
+library(ComplexHeatmap)
+library(circlize)
+
+# Directory containing all gene coverage files
+#dataDC<-read.delim("~/volumes/ms84_lustre/scratch126/casm/teams/team294/projects/cseg/PrimateSomatic/Macaca_mulatta/targeted_dupcaller/set1/results.MQD0001d_tds0001/results.MQD0001d_tds0001_gene_coverage.txt", header = FALSE)
+indir <- "~/volumes/ms84_lustre/scratch126/casm/teams/team294/projects/cseg/PrimateSomatic/Macaca_mulatta/targeted_dupcaller/set1/"
+
+# Find all coverage files
+files <- list.files(
+  indir,
+  pattern = "gene_coverage\\.txt$",
+  recursive = TRUE,
+  full.names = TRUE
+)
+
+# Read all files
+coverage <- lapply(files, function(f){
+  
+  sample <- basename(dirname(f))   # e.g. results.MQD0001d_tds0001
+  
+  read.delim(f, header = FALSE,
+             col.names = c("Gene","Coverage")) %>%
+    mutate(Sample = sample)
+  
+}) %>%
+  bind_rows()
+
+head(coverage)
+
+### Convert to a gene x sample matrix
+cov.mat <- coverage %>%
+  pivot_wider(names_from = Sample,
+              values_from = Coverage) %>%
+  column_to_rownames("Gene") %>%
+  as.matrix()
+
+mat <- t(log2(cov.mat + 1))   # transpose so genes are on x-axis
+
+
+pdf(paste0(RESDIR_QC,"/GeneCoverage_ComplexHeatmap.pdf"),
+    width = 20,
+    height = 8)
+
+Heatmap(mat,
+        cluster_rows = TRUE,
+        cluster_columns = FALSE,
+        column_names_rot = 90,
+        column_names_gp = grid::gpar(fontsize = 5),
+        row_names_gp = grid::gpar(fontsize = 10), 
+        column_title = "Mean Duplex Coverage across Genes (exon-level profiling)",
+        row_title = "Samples",
+        )
+
+dev.off()
+
+## calculate the mean coverage for each gene across all samples with:
+gene.mean <- coverage %>%
+  group_by(Gene) %>%
+  summarise(mean_coverage = mean(Coverage, na.rm = TRUE)) %>%
+  arrange(desc(mean_coverage))
+gene.mean.dc <- setNames(gene.mean$mean_coverage, gene.mean$Gene)
+
+head(gene.mean.dc)
+
+
 ### Run dndscv on somatic callset
-dndsout = dndscv(dataSOM, refdb=REFCDS, cv=NULL)
+dndsout = dndscv(dataSOM, refdb=REFCDS, cv=NULL, dc=gene.mean.dc, gene_list=names(gene.mean.dc))
 dndsout_value<-signif(dndsout$globaldnds["wall","mle"],2)
+
+### Run dndscv on somatic callset for each sample
+#list_dndsout <- lapply(
+#  split(dataSOM, dataSOM$sample),
+#  function(df_sample) {
+#    dndscv(df_sample, refdb = REFCDS, cv = NULL)
+#  }
+#)
+
+##
+#dc=Duplex coverage per gene. Named Numeric Vector with values reflecting the mean duplex coverage per site per gene, and names corresponding to gene names. Use this argument only when running dNdScv on duplex sequencing data to use gene coverage in the offset of the regression model (default = NULL)
 
 ### Run dndscv on somatic callset for each sample
 list_dndsout <- lapply(
@@ -35,6 +114,7 @@ list_dndsout <- lapply(
     dndscv(df_sample, refdb = REFCDS, cv = NULL)
   }
 )
+
 
 ###
 str(list_dndsout)
@@ -103,7 +183,7 @@ signif_genes<-sel_cv[sel_cv$qglobal_cv<0.1,]
 nrow(signif_genes) # 130 genes
 top_signif_genes<-signif_genes[signif_genes$qglobal_cv==0,c(1:10,20)]
 top_signif_genes
-write.xlsx(top_signif_genes,"/Users/ms84/Research/postdoc/projects/PrimateSomatic/05_results/prelim/macaca_mulatta/nanoseq_targeted/RG25/top_significant_genes.xlsx")
+#write.xlsx(top_signif_genes,"/Users/ms84/Research/postdoc/projects/PrimateSomatic/05_results/prelim/macaca_mulatta/nanoseq_targeted/RG25/top_significant_genes.xlsx")
 
 
 
@@ -114,7 +194,9 @@ write.xlsx(top_signif_genes,"/Users/ms84/Research/postdoc/projects/PrimateSomati
 
 #panel_dnds = dndscv(dataSOM, gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf)
 #panel_dnds = dndscv(dataSOM[!dataSOM$sample %in% excluded_samples_tier1,], gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf)
-panel_dnds = dndscv(dataSOM[!dataSOM$sample %in% excluded_samples_tier2,], gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf)
+#panel_dnds = dndscv(dataSOM[!dataSOM$sample %in% excluded_samples_tier2,], gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf)
+
+panel_dnds = dndscv(dataSOM, gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf, dc=gene.mean.dc)
 
 
 panel_dnds$genemuts
@@ -127,7 +209,7 @@ df <- as.data.frame(panel_dnds$genemuts)
 signif_genes<-sel_cv[sel_cv$qglobal_cv<0.1,]
 signif_genes
 
-# Total observed and expected nonsynonymous burden
+0# Total observed and expected nonsynonymous burden
 df <- df %>%
   mutate(
     obs_nonsyn = n_mis + n_non + n_spl,
@@ -187,7 +269,9 @@ p<-ggplot(df, aes(x = exp_nonsyn, y = obs_nonsyn)) +
   )
 #pdf(paste0(RESDIR_DRIVERS,"/observed_vs_expected.pdf"),  width = 10, height = 6)
 #pdf(paste0(RESDIR_DRIVERS,"/observed_vs_expected_filt_tier1.pdf"),  width = 10, height = 6)
-pdf(paste0(RESDIR_DRIVERS,"/observed_vs_expected_filt_tier2.pdf"),  width = 10, height = 6)
+#pdf(paste0(RESDIR_DRIVERS,"/observed_vs_expected_filt_tier2.pdf"),  width = 10, height = 6)
+
+pdf(paste0(RESDIR_DRIVERS,"/observed_vs_expected_dc.pdf"),  width = 10, height = 6)
 p
 dev.off()
 
@@ -199,8 +283,10 @@ for(tissue in c("Bladder","Liver", "Oesophagus", "Prostate", "Skin")){
 
   #panel_dnds = dndscv(dataSOM[dataSOM$tissue == tissue,], gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf)
   #panel_dnds = dndscv(dataSOM[dataSOM$tissue == tissue & !dataSOM$sample %in% excluded_samples_tier1,], gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf)
-  panel_dnds = dndscv(dataSOM[dataSOM$tissue == tissue & !dataSOM$sample %in% excluded_samples_tier2,], gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf)
-
+  #panel_dnds = dndscv(dataSOM[dataSOM$tissue == tissue & !dataSOM$sample %in% excluded_samples_tier2,], gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf)
+  
+  panel_dnds = dndscv(dataSOM[dataSOM$tissue == tissue,], gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf,  dc=gene.mean.dc)
+  
 panel_dnds$genemuts
 sel_cv = panel_dnds$sel_cv
 print(sel_cv[sel_cv$qglobal_cv<0.1,c(1:10,19)], digits = 3)
@@ -268,14 +354,59 @@ p<-ggplot(df, aes(x = exp_nonsyn, y = obs_nonsyn)) +
     panel.grid.minor = element_blank(),
     plot.title = element_text(face = "bold")
   )
-pdf(paste0(RESDIR_DRIVERS,"/observed_vs_expected_", tissue, "_filt_tier2.pdf"),  width = 10, height = 6)
-#pdf(paste0(RESDIR_DRIVERS,"/observed_vs_expected_", tissue, "_filt_tier1.pdf"),  width = 10, height = 6)
 #pdf(paste0(RESDIR_DRIVERS,"/observed_vs_expected_", tissue, ".pdf"),  width = 10, height = 6)
-
+pdf(paste0(RESDIR_DRIVERS,"/observed_vs_expected_", tissue, "_dc.pdf"),  width = 10, height = 6)
 print(p)
 dev.off()
 }
 
 
+########################
+### Driver plotting ####
+########################
+
+driver_plot_per_donor(dndsout$annotmuts)
+driver_plot_per_donor
+# source a specific function
+source("~/volumes/ms84_software/team268/tools/R/driver_plot.R")
+source("~/volumes/ms84_software/team268/tools/R/driver_plot_per_donor.R")
 
 
+#### source every function in the shared tools directory
+#list.files("~/volumes/ms84_software/team268/tools/R", full.names = TRUE, pattern = "*.R") %>%
+#  purrr::walk(source)
+
+
+dnds
+
+muts <- dndsout$annotmuts |>
+  dplyr::transmute(
+    gene,
+    sampleID,
+    donor,
+    seq_type,
+    chr,
+    pos,
+    ref,
+    mut,
+    impact,
+    duplex_vaf,
+    cellfraction
+  )
+
+
+
+driver_plot
+driver_plot(genes2plot=dndsout$genemuts$gene_name,
+            muts = dndsout$annotmuts,
+            coverage_df = gene.mean.dc)
+driver_plot
+
+
+
+
+
+# a trimmed-down real data slice (~50 driver genes, all 198 samples) extracted
+# from ibd/reports/20260219_dndscv/dndscv_cache
+demo_data <- readRDS("data/demo_data.rds")
+list2env(demo_data, envir = environment())

@@ -14,6 +14,8 @@ test_palette <- c(
   l       = "#FED9A6"   # warm light orange
 )
 
+
+
 ### Tissue palette
 tissue_cols <- c(
   "Bladder" = "#F8766D",

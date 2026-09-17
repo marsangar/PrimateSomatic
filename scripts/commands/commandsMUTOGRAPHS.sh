@@ -85,3 +85,37 @@ done
 
 
 
+
+
+
+
+23/07/2026
+##################
+### DupCaller  ###
+##################
+
+
+
+### Inspect results (burdens)
+for SAMPLE in OARID0076b_ds0001
+do
+echo "Analyzing sample: $SAMPLE"
+cat /lustre/scratch127/casm/projects/mutographs/ac36/dupcaller_runs/sheep_run_1_initial/dupcaller."$SAMPLE"/dupcaller."$SAMPLE"_sbs_burden.txt |grep "Corrected burden" |head -n 1
+echo
+done
+
+### Inspect results (snv calls)
+for SAMPLE in OARID0076b_ds0001
+echo
+echo "Analyzing sample $SAMPLE"
+echo "dupcaller:"
+cat /lustre/scratch127/casm/projects/mutographs/ac36/dupcaller_runs/sheep_run_1_initial/dupcaller."$SAMPLE"/dupcaller."$SAMPLE"_snv.vcf |grep -v "^#" |awk 'OFS="\t"{if($7=="PASS") print $0}' |wc -l
+
+echo "nanoseq:"
+
+ID=${SAMPLE%%[a-z]_ds*}
+echo "$ID"
+zcat /lustre/scratch127/casm/projects/mutographs/ac36/nanoseq_runs/feb26/output/nanoseq/$ID/$SAMPLE/results.muts.vcf.gz   |grep -v "^#" | awk 'OFS="\t"{if($7=="PASS") print $0}' | wc -l
+echo
+echo
+done
