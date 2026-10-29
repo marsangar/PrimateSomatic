@@ -5,70 +5,11 @@
 ### Load packages
 library(sigfit)
 library(Biostrings)
-
-'''''
-make_spectrum <- function(vcf_file, dnaREF){
-  
-  vcf <- read.vcfR(vcf_file)
-  
-  dataVCF <- as.data.frame(vcf@fix)
-  dataVCF$POS <- as.integer(dataVCF$POS)
-  
-  ## SNVs only
-  dataVCF <- dataVCF[nchar(dataVCF$REF) == 1 & nchar(dataVCF$ALT) == 1,]
-  
-  ## sequence context
-  dataVCF$contextREF <- apply(
-    dataVCF,
-    1,
-    function(x)
-      get_context(as.character(x["CHROM"]),
-                  as.integer(x["POS"]),
-                  dnaREF)
-  )
-  
-  dataVCF$contextREF_5   <- substr(dataVCF$contextREF,1,1)
-  dataVCF$contextREF_3   <- substr(dataVCF$contextREF,3,3)
-  
-  dataVCF$contextALT <-
-    paste0(dataVCF$contextREF_5,
-           dataVCF$ALT,
-           dataVCF$contextREF_3)
-  
-  ## pyrimidine normalization
-  dataVCF$contexREF_normalized <-
-    ifelse(
-      dataVCF$REF %in% c("A","G"),
-      reverseComplement(DNAStringSet(dataVCF$contextREF)),
-      dataVCF$contextREF
-    )
-  
-  dataVCF$contextALT_normalized <-
-    ifelse(
-      dataVCF$REF %in% c("A","G"),
-      reverseComplement(DNAStringSet(dataVCF$contextALT)),
-      dataVCF$contextALT
-    )
-  
-  dataVCF$mutation_normalized <-
-    paste0(dataVCF$contexREF_normalized,
-           ">",
-           dataVCF$contextALT_normalized)
-  
-  data("cosmic_signatures_v2")
-  
-  mutations <- rep(0,96)
-  names(mutations) <- colnames(cosmic_signatures_v2)
-  
-  tbl <- table(dataVCF$mutation_normalized)
-  
-  mutations[names(tbl)] <- as.integer(tbl)
-  
-  mutations
-}
-'''''
+library(vcfR)
 
 ### Load functions
+
+### 
 get_context <- function(chr, pos, ref_genome) {
   if (!(chr %in% names(ref_genome))) return(NA)
   # Extract 3bp region
@@ -76,115 +17,153 @@ get_context <- function(chr, pos, ref_genome) {
   as.character(seq)
 }
 
-
 #------------------------------------------------------------
-# make_spectrum
+# make_spectrum_vcf
 #
-# Generate a 96-channel SBS mutational spectrum from either:
-#   1) a VCF file, or
-#   2) a data.frame containing SNVs.
+# Generate a 96-channel SBS mutational spectrum from mutations listed on a VCF 
 #
 # Args:
-#   x      : Character string giving the path to a VCF file, or a
-#            data.frame with columns CHROM, POS, REF and ALT.
-#   dnaREF : BSgenome/DNA reference object used by get_context() to
-#            extract the trinucleotide sequence context.
+#   vcf_file : Character string giving the path to a VCF file containing mutations
+#   dnaREF : DNAStringSet object used by get_context() to extract the trinucleotide sequence context.
 #
 # Returns:
-#   A named integer vector of length 96 containing the counts of each
-#   pyrimidine-normalized SBS mutation type (COSMIC ordering).
+#   A named integer vector of length 96 containing the counts of each pyrimidine-normalized SBS mutation type (COSMIC ordering).
 #------------------------------------------------------------
-
-make_spectrum <- function(x, dnaREF){
+make_spectrum_vcf <- function(vcf_file, dnaREF){
   
-  ## Read input
-  if (is.character(x) && length(x) == 1) {
-    
-    ## Input is a VCF file
-    vcf <- read.vcfR(x)
-    dataVCF <- as.data.frame(vcf@fix)
-    
-  } else if (is.data.frame(x)) {
-    
-    ## Input is already a data.frame of variants
-    dataVCF <- x
-    
-  } else {
-    
-    stop("Input must be either a VCF file path or a data.frame.")
-    
-  }
+  ## Read VCF file
+  vcf <- read.vcfR(vcf_file)
   
-  ## Check that the required columns are present
-  required_cols <- c("CHROM", "POS", "REF", "ALT")
+  dataMUT <- as.data.frame(vcf@fix)
+  dataMUT$POS <- as.integer(dataMUT$POS)
   
-  if (!all(required_cols %in% colnames(dataVCF))) {
-    stop(
-      "Input data.frame must contain columns: ",
-      paste(required_cols, collapse = ", ")
+  ## SNVs only
+  dataMUT <- dataMUT[nchar(dataMUT$REF) == 1 & nchar(dataMUT$ALT) == 1,]
+  
+  ## sequence context
+  dataMUT$contextREF <- apply(
+    dataMUT,
+    1,
+    function(x)
+      get_context(as.character(x["CHROM"]),
+                  as.integer(x["POS"]),
+                  dnaREF)
+  )
+  
+  dataMUT$contextREF_5   <- substr(dataMUT$contextREF,1,1)
+  dataMUT$contextREF_3   <- substr(dataMUT$contextREF,3,3)
+  
+  dataMUT$contextALT <-
+    paste0(dataMUT$contextREF_5,
+           dataMUT$ALT,
+           dataMUT$contextREF_3)
+  
+  ## pyrimidine normalization
+  dataMUT$contexREF_normalized <-
+    ifelse(
+      dataMUT$REF %in% c("A","G"),
+      reverseComplement(DNAStringSet(dataMUT$contextREF)),
+      dataMUT$contextREF
     )
-  }
   
-  dataVCF$POS <- as.integer(dataVCF$POS)
+  dataMUT$contextALT_normalized <-
+    ifelse(
+      dataMUT$REF %in% c("A","G"),
+      reverseComplement(DNAStringSet(dataMUT$contextALT)),
+      dataMUT$contextALT
+    )
   
-  ## Keep SNVs only
-  dataVCF <- dataVCF[
-    nchar(dataVCF$REF) == 1 &
-      nchar(dataVCF$ALT) == 1,
-  ]
+  dataMUT$mutation_normalized <-
+    paste0(dataMUT$contexREF_normalized,
+           ">",
+           dataMUT$contextALT_normalized)
   
-  ## Retrieve trinucleotide sequence context
-  dataVCF$contextREF <- mapply(
-    get_context,
-    chrom = as.character(dataVCF$CHROM),
-    pos = dataVCF$POS,
-    MoreArgs = list(dnaREF = dnaREF)
-  )
-  
-  ## Build reference and alternate trinucleotide contexts
-  dataVCF$contextREF_5 <- substr(dataVCF$contextREF, 1, 1)
-  dataVCF$contextREF_3 <- substr(dataVCF$contextREF, 3, 3)
-  
-  dataVCF$contextALT <- paste0(
-    dataVCF$contextREF_5,
-    dataVCF$ALT,
-    dataVCF$contextREF_3
-  )
-  
-  ## Normalize mutations to the pyrimidine representation
-  idx <- dataVCF$REF %in% c("A", "G")
-  
-  dataVCF$contexREF_normalized <- dataVCF$contextREF
-  dataVCF$contexREF_normalized[idx] <-
-    as.character(reverseComplement(
-      DNAStringSet(dataVCF$contextREF[idx])
-    ))
-  
-  dataVCF$contextALT_normalized <- dataVCF$contextALT
-  dataVCF$contextALT_normalized[idx] <-
-    as.character(reverseComplement(
-      DNAStringSet(dataVCF$contextALT[idx])
-    ))
-  
-  dataVCF$mutation_normalized <- paste0(
-    dataVCF$contexREF_normalized,
-    ">",
-    dataVCF$contextALT_normalized
-  )
-  
-  ## Load COSMIC SBS96 mutation classes
   data("cosmic_signatures_v2")
   
-  ## Initialize the spectrum
-  mutations <- integer(96)
+  mutations <- rep(0,96)
   names(mutations) <- colnames(cosmic_signatures_v2)
   
-  ## Count mutations belonging to each SBS96 class
-  tbl <- table(dataVCF$mutation_normalized)
+  tbl <- table(dataMUT$mutation_normalized)
+  
   mutations[names(tbl)] <- as.integer(tbl)
   
-  return(mutations)
+  mutations
 }
+
+
+#------------------------------------------------------------
+# make_spectrum_df
+#
+# Generate a 96-channel SBS mutational spectrum from mutations listed on a data.frame
+#
+# Args:
+#   df : data.frame object containing mutations. mus have "CHROM", "POS", "REF", "ALT" columns.
+#   dnaREF : DNAStringSet object used by get_context() to extract the trinucleotide sequence context.
+#
+# Returns:
+#   A named integer vector of length 96 containing the counts of each pyrimidine-normalized SBS mutation type (COSMIC ordering).
+#------------------------------------------------------------
+make_spectrum_df <- function(df, dnaREF){
+  
+  dataMUT<-df
+  
+  ## SNVs only
+  dataMUT <- dataMUT[nchar(dataMUT$REF) == 1 & nchar(dataMUT$ALT) == 1,]
+  
+  ## sequence context
+  dataMUT$contextREF <- apply(
+    dataMUT,
+    1,
+    function(x)
+      get_context(as.character(x["CHROM"]),
+                  as.integer(x["POS"]),
+                  dnaREF)
+  )
+  
+  dataMUT$contextREF_5   <- substr(dataMUT$contextREF,1,1)
+  dataMUT$contextREF_3   <- substr(dataMUT$contextREF,3,3)
+  
+  dataMUT$contextALT <-
+    paste0(dataMUT$contextREF_5,
+           dataMUT$ALT,
+           dataMUT$contextREF_3)
+  
+  ## pyrimidine normalization
+  dataMUT$contexREF_normalized <-
+    ifelse(
+      dataMUT$REF %in% c("A","G"),
+      reverseComplement(DNAStringSet(dataMUT$contextREF)),
+      dataMUT$contextREF
+    )
+  
+  dataMUT$contextALT_normalized <-
+    ifelse(
+      dataMUT$REF %in% c("A","G"),
+      reverseComplement(DNAStringSet(dataMUT$contextALT)),
+      dataMUT$contextALT
+    )
+  
+  dataMUT$mutation_normalized <-
+    paste0(dataMUT$contexREF_normalized,
+           ">",
+           dataMUT$contextALT_normalized)
+  
+  data("cosmic_signatures_v2")
+  
+  mutations <- rep(0,96)
+  names(mutations) <- colnames(cosmic_signatures_v2)
+  
+  tbl <- table(dataMUT$mutation_normalized)
+  
+  mutations[names(tbl)] <- as.integer(tbl)
+  
+  mutations
+}
+
+
+
+
+
 
 
 
@@ -396,9 +375,34 @@ dev.off()
 
 
 
-### Load somatic mutations
-mut <- make_spectrum("~/volumes/ms84_lustre/scratch126/casm/teams/team294/projects/cseg/PrimateSomatic/Macaca_mulatta/benchmarking/tdc_tns_comparisson/snv/isec_MQD0004k_tds0002/0002.vcf",
-                     dnaREF)
+########################################
+#### Exploratory Signature Analysis ####
+########################################
+
+### Load somatic mutation dataset
+dataSOM<-read.delim(paste0(RESDIR_VARIANTS, "/somatic_variants.txt"))
+dim(dataSOM)
+
+### Display raw mutation spectra for different tissues
+mut_bladder <- make_spectrum_df(dataSOM[dataSOM$tissue %in% "Bladder",], dnaREF)
+mut_liver <- make_spectrum_df(dataSOM[dataSOM$tissue %in% "Liver",], dnaREF)
+mut_oesophagus <- make_spectrum_df(dataSOM[dataSOM$tissue %in% "Oesophagus",], dnaREF)
+mut_prostate <- make_spectrum_df(dataSOM[dataSOM$tissue %in% "Prostate",], dnaREF)
+mut_skin <- make_spectrum_df(dataSOM[dataSOM$tissue %in% "Skin",], dnaREF)
+
+###
+pdf(paste0(RESDIR_SIGNATURES,"/spectrum_tissues.pdf"), 20, 10)
+par(mar = c(10, 8, 8, 4) )
+plot_spectrum(mut_bladder, name = "bladder")
+plot_spectrum(mut_liver, name = "liver")
+plot_spectrum(mut_oesophagus, name = "oesophagus")
+plot_spectrum(mut_prostate, name = "prostate")
+plot_spectrum(mut_skin, name = "skin")
+dev.off()
+
+
+
+###
 mutations<-matrix(mut, nrow = 1)
 colnames(mutations)<-colnames(mut)
 
@@ -441,6 +445,9 @@ dev.off()
 # Normalise COSMIC signatures to genome-independent representation
 sigs.fixed = convert_signatures(cosmic_signatures_v3,
                                 opportunities_from="human-genome")
+
+
+
 
 
 

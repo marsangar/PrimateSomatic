@@ -189,7 +189,6 @@ top_signif_genes
 
 
 
-
 ### Driver discovery in targeted sequencing data
 
 #panel_dnds = dndscv(dataSOM, gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf)
@@ -209,7 +208,7 @@ df <- as.data.frame(panel_dnds$genemuts)
 signif_genes<-sel_cv[sel_cv$qglobal_cv<0.1,]
 signif_genes
 
-0# Total observed and expected nonsynonymous burden
+# Total observed and expected nonsynonymous burden
 df <- df %>%
   mutate(
     obs_nonsyn = n_mis + n_non + n_spl,
@@ -410,3 +409,177 @@ driver_plot
 # from ibd/reports/20260219_dndscv/dndscv_cache
 demo_data <- readRDS("data/demo_data.rds")
 list2env(demo_data, envir = environment())
+
+
+
+
+
+
+### 19/10/2026
+
+### Load Genes in the panel 
+dataPANEL<-read.delim("/Users/ms84/Downloads/Sanger_TERT-v4_TE-95148282_hg19_highstringencyfilter_buccal_gene_list.tsv")
+panelgenes<-dataPANEL$gene
+panelgenes_filt<-panelgenes[!panelgenes %in% c("H3F3A", "RHOB", "NFKBIZ", "HIST1H3B", "HIST1H2BD", "HLA-A", "HLA-B", "PIM1", "CDKN2A.p16INK4a", "CDKN2A.p14arf", "FAS", "KLF5", "ERCC5", "HOXB3", "H3F3B", "MEF2B", "CEBPA", "PAK7", "FAM58A")]
+
+
+#### Driver discovery for the ASHG annual meeting 2026 - 
+
+dataSOM<-read.delim("/Users/ms84/Research/postdoc/projects/PrimateSomatic/results/v0.2/Macaca_mulatta/targeted_nanoseq/variants/somatic_variants.txt")
+dim(dataSOM)
+
+### without dc correction
+panel_dnds = dndscv(dataSOM, gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf)
+panel_dnds$genemuts
+
+panel_dnds_liver = dndscv(dataSOM[dataSOM$tissue %in% "Liver",], gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf)
+panel_dnds_bladder = dndscv(dataSOM[dataSOM$tissue %in% "Bladder",], gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf)
+panel_dnds_oesophagus = dndscv(dataSOM[dataSOM$tissue %in% "Oesophagus",], gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf)
+panel_dnds_prostate = dndscv(dataSOM[dataSOM$tissue %in% "Prostate",], gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf)
+panel_dnds_skin = dndscv(dataSOM[dataSOM$tissue %in% "Skin",], gene_list=panelgenes_filt, refdb = REFCDS, max_muts_per_gene_per_sample = Inf, max_coding_muts_per_sample = Inf)
+
+
+
+sel_cv = panel_dnds$sel_cv
+
+sel_cv_liver = panel_dnds_liver$sel_cv
+sel_cv_bladder = panel_dnds_bladder$sel_cv
+sel_cv_oesophagus= panel_dnds_oesophagus$sel_cv
+sel_cv_prostate= panel_dnds_prostate$sel_cv
+sel_cv_skin = panel_dnds_skin$sel_cv
+
+
+
+
+
+
+### Plot candidates
+df <- as.data.frame(panel_dnds$genemuts)
+
+signif_genes<-sel_cv[sel_cv$qglobal_cv<0.1,]
+signif_genes
+
+
+###
+sel_cv[sel_cv$qmis_cv<0.1,]
+sel_cv[sel_cv$qtrunc_cv<0.1,]
+sel_cv[sel_cv$qind_cv<0.1,]
+sel_cv[sel_cv$qglobal_cv<0.1,]
+
+dim(sel_cv)
+
+
+
+#### Set ranked objects
+rank_qglobal_cv<-sel_cv[order(sel_cv$qglobal_cv, decreasing = FALSE),]
+rank_qmis_cv<-sel_cv[order(sel_cv$qmis_cv, decreasing = FALSE),]
+rank_qtrunc_cv<-sel_cv[order(sel_cv$qtrunc_cv, decreasing = FALSE),]
+rank_qind_cv<-sel_cv[order(sel_cv$qind_cv, decreasing = FALSE),]
+
+
+
+pdf("/Users/ms84/Research/postdoc/projects/PrimateSomatic/results/v0.2/Macaca_mulatta/targeted_nanoseq/drivers/selection_landscape_macaque.pdf")
+
+plot("", xlim=c(0,5), ylim=c(0.5,0), main="Selection landscape in Rhesus macaque", xlab="", ylab="q value", axes=FALSE)
+axis(side= 1, at=c(1,2,3,4), labels = c("global", "missense", "truncation", "indel"))
+axis(side= 2)
+
+rect(xleft = 0.95, xright = 1.05, ybottom = 1, ytop = 0, col = "black")
+rect(xleft = 1.95, xright = 2.05, ybottom = 1, ytop = 0, col = "black")
+rect(xleft = 2.95, xright = 3.05, ybottom = 1, ytop = 0, col = "black")
+rect(xleft = 3.95, xright = 4.05, ybottom = 1, ytop = 0, col = "black")
+
+rampalette<-colorRampPalette(c("yellow", "red"))(1000)
+
+### plot values
+points(x=rep(1, nrow(rank_qglobal_cv)), y=rank_qglobal_cv$qglobal_cv, pch=21, bg=rampalette, cex=2)
+points(x=rep(2, nrow(rank_qmis_cv)), y=rank_qmis_cv$qmis_cv, pch=21, bg=rampalette, cex=2)
+points(x=rep(3, nrow(rank_qtrunc_cv)), y=rank_qtrunc_cv$qtrunc_cv, pch=21, bg=rampalette, cex=2)
+points(x=rep(4, nrow(rank_qind_cv)), y=rank_qind_cv$qind_cv, pch=21, bg=rampalette, cex=2)
+
+### plot gene labels
+n_labels<-5
+text(rank_qglobal_cv$gene_name[1:n_labels], x=rep(1.3, n_labels), y=rank_qglobal_cv$qglobal_cv[1:n_labels], cex = 0.7)
+text(rank_qmis_cv$gene_name[1:n_labels], x=rep(2.3, n_labels), y=rank_qmis_cv$qmis_cv[1:n_labels], cex = 0.7)
+text(rank_qtrunc_cv$gene_name[1:n_labels], x=rep(3.3, n_labels), y=rank_qtrunc_cv$qtrunc_cv[1:n_labels], cex = 0.7)
+text(rank_qind_cv$gene_name[1:n_labels], x=rep(4.3, n_labels), y=rank_qind_cv$qind_cv[1:n_labels], cex = 0.7)
+
+dev.off()
+
+
+
+
+
+### Explore VAF:
+dataSOM[dataSOM$DUPLEX_VAF, "DUP"]
+
+
+
+
+# Total observed and expected nonsynonymous burden
+df <- df %>%
+  mutate(
+    obs_nonsyn = n_mis + n_non + n_spl,
+    exp_nonsyn = exp_mis + exp_non + exp_spl,
+    enrichment = obs_nonsyn / exp_nonsyn,
+    total_mut = n_syn + obs_nonsyn
+  )
+
+# Label strongest enrichments
+df$label <- ifelse(df$enrichment > 2 & df$obs_nonsyn >= 5, df$gene_name,"")
+
+p<-ggplot(df, aes(x = exp_nonsyn, y = obs_nonsyn)) +
+  
+  geom_point(
+    aes(size = total_mut,
+        color = enrichment),
+    alpha = 0.8
+  ) +
+  
+  geom_abline(
+    slope = 1,
+    intercept = 0,
+    linetype = "dashed",
+    color = "grey40"
+  ) +
+  
+  geom_text_repel(
+    aes(label = label),
+    size = 3.5,
+    max.overlaps = Inf
+  ) +
+  
+  scale_x_log10() +
+  scale_y_log10() +
+  
+  scale_color_viridis_c(
+    option = "magma",
+    name = "Observed / Expected"
+  ) +
+  
+  scale_size_continuous(
+    range = c(2, 10),
+    name = "Total mutations"
+  )  +
+  
+  labs(
+    title = "Observed vs Expected Nonsynonymous Mutations",
+    x = "Expected nonsynonymous mutations",
+    y = "Observed nonsynonymous mutations"
+  ) +
+  
+  theme_bw(base_size = 14) +
+  
+  theme(
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(face = "bold")
+  )
+#pdf(paste0(RESDIR_DRIVERS,"/observed_vs_expected.pdf"),  width = 10, height = 6)
+#pdf(paste0(RESDIR_DRIVERS,"/observed_vs_expected_filt_tier1.pdf"),  width = 10, height = 6)
+#pdf(paste0(RESDIR_DRIVERS,"/observed_vs_expected_filt_tier2.pdf"),  width = 10, height = 6)
+
+pdf(paste0(RESDIR_DRIVERS,"/observed_vs_expected_dc.pdf"),  width = 10, height = 6)
+p
+dev.off()
+
+

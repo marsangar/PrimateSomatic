@@ -1,0 +1,184 @@
+
+# Cohort overview figure: rhesus macaque cohort
+#   Panel A: age and sex per donor
+#   Panel B: tissues sampled per donor, grouped by biological system
+#
+# install.packages(c("readxl", "dplyr", "tidyr", "ggplot2", "patchwork"))
+
+suppressPackageStartupMessages({
+  library(readxl); library(dplyr); library(tidyr)
+  library(ggplot2); library(patchwork)
+})
+
+# ---- Settings ----------------------------------------------------------------
+in_file  <- "/Users/ms84/Research/postdoc/projects/PrimateSomatic/metadata/cohortMRC.xlsx"     # Species, Sample, Age, Tissue, Sex
+out_file <- "cohort_overview"    # writes .pdf and .png
+
+frame_col <- "black"
+frame_lwd <- 0.3
+text_col  <- "grey10"   # dark text everywhere
+
+sex_cols <- c(Female = "#F08FB8", Male = "#6FA8DC")   # pink / blue
+
+# Tissue -> biological group (roughly post-mitotic -> high turnover)
+tissue_groups <- c(
+  "Heart"           = "Muscle",
+  "Skeletal muscle" = "Muscle",
+  "Liver"           = "Hepatic",
+  "Spleen"          = "Lymphoid",
+  "Prostate"        = "Reproductive",
+  "Epididymis"      = "Reproductive",
+  "Uterus"          = "Reproductive",
+  "Bladder"         = "Urinary",
+  "Skin"            = "Skin",
+  "Oesophagus"      = "Gastrointestinal",
+  "Colon"           = "Gastrointestinal"
+)
+group_cols <- c(                  # soft purple -> soft red
+  "Muscle"           = "#9D8CC9",
+  "Hepatic"          = "#B79BD0",
+  "Lymphoid"         = "#CBA0CB",
+  "Reproductive"     = "#DCA0BC",
+  "Urinary"          = "#E7A3AA",
+  "Skin"             = "#E79090",
+  "Gastrointestinal" = "#D97575"
+)
+sex_specific <- c(Prostate = "Male", Epididymis = "Male", Uterus = "Female")
+
+# ---- Read and tidy -----------------------------------------------------------
+df <- read_excel(in_file) |>
+  mutate(across(where(is.character), trimws),
+         Sex    = tools::toTitleCase(tolower(Sex)),
+         Tissue = recode(Tissue, "Muscle" = "Skeletal muscle"),
+         Age    = as.numeric(Age),
+         Donor  = sub("[A-Za-z]+$", "", Sample))      # MQX0008l -> MQX0008
+
+unknown <- setdiff(unique(df$Tissue), names(tissue_groups))
+if (length(unknown)) {
+  warning("Unmapped tissues set to 'Other': ", paste(unknown, collapse = ", "))
+  tissue_groups[unknown] <- "Other"
+  group_cols["Other"]    <- "grey70"
+}
+
+# ---- Donors ------------------------------------------------------------------
+donors <- df |>
+  group_by(Donor) |>
+  summarise(n_age = n_distinct(Age), n_sex = n_distinct(Sex),
+            Age = first(Age), Sex = first(Sex), .groups = "drop")
+if (any(donors$n_age > 1 | donors$n_sex > 1))
+  warning("Some donors have inconsistent Age/Sex across samples.")
+
+same <- donors |> group_by(Age, Sex) |> filter(n() > 1) |> arrange(Age)
+if (nrow(same)) {
+  message("Donors sharing identical Age and Sex (check they are distinct animals):")
+  print(as.data.frame(select(same, Donor, Age, Sex)))
+}
+
+donor_levels  <- donors |> arrange(Age, Donor) |> pull(Donor)   # youngest at bottom
+tissue_levels <- names(tissue_groups)[names(tissue_groups) %in% df$Tissue]
+group_levels  <- names(group_cols)[names(group_cols) %in% tissue_groups[tissue_levels]]
+
+# ---- Heatmap data --------------------------------------------------------------
+grid <- expand_grid(Donor = donor_levels, Tissue = tissue_levels) |>
+  left_join(count(df, Donor, Tissue), by = c("Donor", "Tissue")) |>
+  left_join(select(donors, Donor, Sex), by = "Donor") |>
+  mutate(n      = coalesce(n, 0L),
+         Group  = factor(tissue_groups[Tissue], levels = group_levels),
+         Tissue = factor(Tissue, levels = tissue_levels),
+         Donor  = factor(Donor, levels = donor_levels),
+         na_sex = Tissue %in% names(sex_specific) &
+           Sex != sex_specific[as.character(Tissue)])
+
+per_donor <- grid |> filter(n > 0) |> count(Donor, name = "n_tissues")
+n_f <- sum(donors$Sex == "Female"); n_m <- sum(donors$Sex == "Male")
+
+# ---- Theme ---------------------------------------------------------------------
+base <- theme_minimal(base_size = 11) +
+  theme(panel.grid   = element_blank(),
+        text         = element_text(colour = text_col),
+        axis.text    = element_text(colour = text_col),
+        axis.title   = element_text(colour = text_col),
+        plot.tag     = element_text(face = "bold", size = 16, colour = "black"),
+        # legend directly under each panel's x axis
+        legend.position   = "bottom",
+        legend.margin     = margin(0, 0, 0, 0),
+        legend.box.margin = margin(0, 0, 0, 0),
+        legend.box.spacing = unit(3, "pt"),
+        legend.title = element_text(face = "bold", size = 9, colour = text_col),
+        legend.text  = element_text(size = 9, colour = text_col),
+        legend.key.size = unit(10, "pt"))
+
+# ---- Panel A: age & sex ------------------------------------------------------
+p_age <- ggplot(donors, aes(y = Donor)) +
+  geom_vline(xintercept = seq(5, 20, 5), colour = "grey85", linewidth = 0.4) +
+  geom_segment(aes(x = 0, xend = Age, yend = Donor),
+               colour = "grey35", linewidth = 0.6) +
+  geom_point(aes(x = Age, fill = Sex), shape = 21, size = 3.4,
+             colour = frame_col, stroke = 0.4) +
+  scale_fill_manual(values = sex_cols, name = "Sex",
+                    labels = c(Female = paste0("Female (n = ", n_f, ")"),
+                               Male   = paste0("Male (n = ", n_m, ")"))) +
+  scale_y_discrete(limits = donor_levels) +
+  scale_x_continuous("Age (years)", limits = c(0, ceiling(max(donors$Age)) + 1),
+                     breaks = seq(0, 20, 5), expand = expansion(add = c(0, 0.3))) +
+  labs(y = NULL, tag = "A") +
+  base +
+  theme(axis.line   = element_line(colour = "black", linewidth = 0.4),
+        axis.ticks  = element_line(colour = "black", linewidth = 0.4),
+        axis.ticks.length = unit(3, "pt"),
+        axis.text.y = element_text(size = 9, family = "mono", colour = text_col),
+        axis.text.x = element_text(size = 9, colour = text_col))
+
+# ---- Panel B: tissue heatmap ------------------------------------------------
+tw <- 0.9
+
+p_heat <- ggplot(grid, aes(x = Tissue, y = Donor)) +
+  geom_tile(data = filter(grid, n == 0, !na_sex), fill = "grey93",
+            colour = frame_col, linewidth = frame_lwd, width = tw, height = tw) +
+  geom_tile(data = filter(grid, na_sex), fill = "white",
+            colour = "grey45", linewidth = frame_lwd, width = tw, height = tw) +
+  geom_point(data = filter(grid, na_sex), shape = 4, size = 1.1, colour = "grey35") +
+  geom_tile(data = filter(grid, n > 0), aes(fill = Group),
+            colour = frame_col, linewidth = frame_lwd, width = tw, height = tw) +
+  geom_text(data = filter(grid, n > 1), aes(label = n),
+            colour = "black", size = 2.8, fontface = "bold") +
+  facet_grid(. ~ Group, scales = "free_x", space = "free_x",
+             labeller = label_wrap_gen(width = 12)) +
+  scale_fill_manual(values = group_cols, name = "Tissue group",
+                    guide = guide_legend(nrow = 1)) +
+  scale_y_discrete(limits = donor_levels) +
+  labs(x = NULL, y = NULL, tag = "B") +
+  base +
+  theme(axis.text.y = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1,
+                                   size = 10, colour = text_col),
+        strip.text  = element_text(face = "bold", size = 9, colour = text_col),
+        panel.spacing.x = unit(6, "pt"))
+
+# ---- Tissues per donor ----------------------------------------------------------
+p_right <- ggplot(per_donor, aes(x = n_tissues, y = Donor)) +
+  geom_col(fill = "grey80", colour = frame_col, linewidth = frame_lwd, width = 0.7) +
+  geom_text(aes(label = n_tissues), hjust = -0.3, size = 2.8, colour = text_col) +
+  scale_y_discrete(limits = donor_levels) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.35))) +
+  labs(x = "Tissues", y = NULL) +
+  base +
+  theme(axis.text = element_blank(),
+        axis.title.x = element_text(size = 9, colour = text_col))
+
+# ---- Assemble ------------------------------------------------------------------
+fig <- p_age + p_heat + p_right +
+  plot_layout(widths = c(1.5, 4, 0.45), guides = "keep") +   # each legend stays under its panel
+  plot_annotation(
+    title   = sprintf("Rhesus macaque cohort: %d donors, %d tissues, %d samples",
+                      length(donor_levels), length(tissue_levels), nrow(df)),
+    caption = "Grey: not sampled  |  x: not applicable (sex-specific organ)",
+    theme   = theme(plot.title   = element_text(face = "bold", size = 14, colour = "black"),
+                    plot.caption = element_text(size = 8.5, colour = "grey20"))
+  )
+
+print(fig)
+
+ggsave(paste0(out_file, ".pdf"), fig, width = 12, height = 7)
+ggsave(paste0(out_file, ".png"), fig, width = 12, height = 7, dpi = 300, bg = "white")
+

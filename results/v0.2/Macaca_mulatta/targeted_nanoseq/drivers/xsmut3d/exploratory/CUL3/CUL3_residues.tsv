@@ -1,0 +1,12 @@
+struct_pos	n_mutations	n_samples	aa_changes	consequences	top_consequence	hotspot_fdr
+58	1	1	p.Y58N	missense_variant	missense_variant	1
+62	1	1	p.Y62C	missense_variant	missense_variant	1
+165	1	1	p.L165V	missense_variant	missense_variant	1
+300	1	1	p.Y300*	stop_gained	stop_gained	1
+331	1	1	p.331fs	frameshift_variant	frameshift_variant	
+430	1	1	p.R430C	missense_variant	missense_variant	1
+454	1	1	p.M454K	missense_variant	missense_variant	1
+564	1	1	p.Y564*	stop_gained	stop_gained	1
+601	1	1	p.I601V	missense_variant	missense_variant	1
+677	1	1	p.V677L	missense_variant	missense_variant	
+753	1	1	p.Y753*	stop_gained	stop_gained	1

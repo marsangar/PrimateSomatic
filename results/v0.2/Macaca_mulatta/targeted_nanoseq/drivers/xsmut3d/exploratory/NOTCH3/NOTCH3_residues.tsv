@@ -1,0 +1,23 @@
+struct_pos	n_mutations	n_samples	aa_changes	consequences	top_consequence	hotspot_fdr
+137	1	1	p.G137G	synonymous_variant	synonymous_variant	
+156	1	1	p.R156Q	missense_variant	missense_variant	1
+258	1	1	p.258fs	frameshift_variant	frameshift_variant	1
+290	1	1	p.T290S	missense_variant	missense_variant	1
+375	1	1	p.375fs	frameshift_variant	frameshift_variant	
+480	1	1	p.480fs	frameshift_variant	frameshift_variant	1
+512	1	1	p.A512G	missense_variant	missense_variant	
+818	1	1	p.A818T	missense_variant	missense_variant	
+885	1	1	p.A885A	synonymous_variant	synonymous_variant	1
+1009	1	1	p.C1009W	missense_variant	missense_variant	
+1016	1	1	p.V1016I	missense_variant	missense_variant	
+1057	1	1	p.A1057E	missense_variant	missense_variant	
+1150	1	1	p.P1150Q	missense_variant	missense_variant	
+1165	1	1	p.G1165G	synonymous_variant	synonymous_variant	
+1188	1	1	p.G1188S	missense_variant	missense_variant	
+1476	1	1	p.A1476T	missense_variant	missense_variant	1
+1589	1	1	p.R1589Q	missense_variant	missense_variant	1
+1610	1	1	p.Y1610N	missense_variant	missense_variant	1
+1772	1	1	p.Q1772H	missense_variant	missense_variant	
+1802	1	1	p.1802fs	frameshift_variant	frameshift_variant	
+1945	1	1	p.W1945R	missense_variant	missense_variant	1
+2237	1	1	p.R2237W	missense_variant	missense_variant	

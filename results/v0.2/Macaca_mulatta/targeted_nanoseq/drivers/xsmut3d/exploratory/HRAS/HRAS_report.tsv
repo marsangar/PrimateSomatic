@@ -1,0 +1,1 @@
+sample_id	chrom	pos	ref	alt	gene	strand	aa_change	aa_pos	cds_change	consequence	species_protein_id	impact	dndscv_ref_cod	dndscv_mut_cod	dndscv_ref3_cod	dndscv_mut3_cod	dndscv_codonsub	aa_ref	aa_alt	struct_pos	align_identity	map_note	struct_aa	ref_match	plddt	plddt_band	burial	n_neighbours	pae_global	interpretable	confidence_note	cosmic_samples_at_residue	hotspot_fdr

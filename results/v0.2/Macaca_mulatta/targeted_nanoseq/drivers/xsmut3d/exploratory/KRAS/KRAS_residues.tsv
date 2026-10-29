@@ -1,0 +1,3 @@
+struct_pos	n_mutations	n_samples	aa_changes	consequences	top_consequence
+276	1	1	p.G276V	missense_variant	missense_variant
+300	1	1	p.Q300Q	synonymous_variant	synonymous_variant

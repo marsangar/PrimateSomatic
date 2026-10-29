@@ -276,7 +276,7 @@ plot_qc_metric <- function(
 ### Rename chromosome naming between different alternative formats
 rename_chroms<- function(x, from="RefSeq.seq.accession", to="Chromosome.name", ncbi_report) {
   ## This function changes the format of a chromosome vector // options are: c("Chromosome.name","Sequence.name", "RefSeq.seq.accession","GenBank.seq.accession","UCSC.style.name")
-  report <- read.delim(ncbi_report)
+  report <- read.delim(ncbi_report, header = FALSE)
   
   # Validate column exists
   if (!from %in% colnames(report) || !to %in% colnames(report)) {

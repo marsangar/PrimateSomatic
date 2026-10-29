@@ -1,0 +1,17 @@
+struct_pos	n_mutations	n_samples	aa_changes	consequences	top_consequence	hotspot_fdr
+229	1	1	p.229fs	frameshift_variant	frameshift_variant	1
+263	1	1	p.T263N	missense_variant	missense_variant	1
+280	1	1	p.280fs	frameshift_variant	frameshift_variant	1
+305	1	1	p.305fs	frameshift_variant	frameshift_variant	1
+430	1	1	p.430del	inframe_deletion	inframe_deletion	1
+443	1	1	p.S443*	stop_gained	stop_gained	0.436063936063936
+445	1	1	p.445fs	frameshift_variant	frameshift_variant	0.973876123876124
+491	1	1	p.491fs	frameshift_variant	frameshift_variant	0.847209932924219
+537	2	2	p.537fs, p.M537T	frameshift_variant, missense_variant	frameshift_variant	0.332239189382047
+543	1	1	p.K543E	missense_variant	missense_variant	1
+548	1	1	p.548del	inframe_deletion	inframe_deletion	0.290709290709291
+550	1	1	p.550del	inframe_deletion	inframe_deletion	0.63956043956044
+572	1	1	p.572fs	frameshift_variant	frameshift_variant	0.718222953517071
+573	1	1	p.573fs	frameshift_variant	frameshift_variant	0.855977355977356
+583	1	1	p.583fs	frameshift_variant	frameshift_variant	0.626143087681549
+587	1	1	p.587del	inframe_deletion	inframe_deletion	1

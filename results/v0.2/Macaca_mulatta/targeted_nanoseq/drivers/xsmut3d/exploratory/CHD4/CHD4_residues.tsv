@@ -1,0 +1,19 @@
+struct_pos	n_mutations	n_samples	aa_changes	consequences	top_consequence	hotspot_fdr
+120	1	1	p.L120P	missense_variant	missense_variant	
+131	1	1	p.K131R	missense_variant	missense_variant	
+140	1	1	p.D140D	synonymous_variant	synonymous_variant	
+214	1	1	p.T214T	synonymous_variant	synonymous_variant	1
+244	1	1	p.T244T	synonymous_variant	synonymous_variant	
+291	1	1	p.V291V	synonymous_variant	synonymous_variant	
+329	1	1	p.Y329C	missense_variant	missense_variant	
+453	1	1	p.R453Q	missense_variant	missense_variant	1
+914	1	1	p.H914D	missense_variant	missense_variant	1
+975	1	1	p.R975P	missense_variant	missense_variant	1
+1107	1	1	p.E1107K	missense_variant	missense_variant	1
+1122	1	1	p.F1122V	missense_variant	missense_variant	1
+1171	1	1	p.I1171I	synonymous_variant	synonymous_variant	1
+1239	1	1	p.K1239R	missense_variant	missense_variant	
+1592	1	1	p.I1592T	missense_variant	missense_variant	
+1725	1	1	p.1725del	inframe_deletion	inframe_deletion	
+1757	1	1	p.R1757H	missense_variant	missense_variant	1
+1892	1	1	p.I1892I	synonymous_variant	synonymous_variant	
